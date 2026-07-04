@@ -2,6 +2,12 @@
 
 Config perso de Claude Code : règles, skills, hooks, mémoire. Sert à réinstaller le même setup sur une autre machine.
 
+## Install rapide
+
+- Automatique : `bash install.sh` (copie tout + adapte les chemins au home de la machine).
+- Guidée par Claude : voir `INSTALL.md` (prompt à coller dans Claude Code).
+- Manuelle : voir la section "Installation sur une nouvelle machine" plus bas.
+
 ## Contenu
 
 - `CLAUDE.md` : règles globales (profil étudiant, pédago adaptatif, dyslexie, format, git, token)
