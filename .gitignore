@@ -1,0 +1,17 @@
+# Sécurité : ne jamais commit de secrets ou données de session
+.credentials.json
+*credentials*
+history.jsonl
+sessions/
+session-env/
+shell-snapshots/
+file-history/
+projects/
+cache/
+paste-cache/
+downloads/
+backups/
+*.bak
+settings.local.json
+.last-*
+.caveman-active
