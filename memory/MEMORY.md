@@ -1,4 +1,13 @@
 # Memory Index
 
-- [Obsidian Vault Simplon](reference_obsidian.md) — vaults AdminSys+DevSecOps sous `/mnt/g/Mon Drive/vault-share` (Google Drive, monter G: avant accès)
-- [Vault AdminSys: maj Index](feedback_vault_index.md) — toujours synchroniser `00 - Index et Roadmap.md` après création/suppression de note
+> Index de la mémoire persistante, chargé à chaque session.
+> Une ligne par mémoire : `- [Titre](fichier.md) : accroche courte`.
+> Le contenu des mémoires va dans les fichiers, jamais ici.
+>
+> Types de mémoire (frontmatter `metadata.type`) :
+> - `user` : qui est l'utilisateur (rôle, préférences)
+> - `feedback` : consignes sur ta façon de travailler (avec le pourquoi)
+> - `project` : travail en cours, objectifs, contraintes
+> - `reference` : pointeurs externes (URLs, tickets, dashboards)
+>
+> Cet index est vide au départ. Claude le remplit au fil des sessions.

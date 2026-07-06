@@ -1,6 +1,6 @@
 # Config Claude Code
 
-Config perso de Claude Code : règles, skills, hooks, mémoire. Sert à réinstaller le même setup sur une autre machine.
+Config Claude Code prête à l'emploi et partageable : règles, skills, hooks, mémoire. Orientée Dev & Ops et pédagogie, générique (pas de données perso). Sert à installer le même setup sur n'importe quelle machine, puis à personnaliser.
 
 ## Install rapide
 
@@ -10,11 +10,11 @@ Config perso de Claude Code : règles, skills, hooks, mémoire. Sert à réinsta
 
 ## Contenu
 
-- `CLAUDE.md` : règles globales (profil étudiant, pédago adaptatif, dyslexie, format, git, token)
+- `CLAUDE.md` : règles globales (pédago adaptatif, clarté visuelle, format, git, token). À personnaliser après install
 - `skills/` : 23 skills (9 DevOps + 14 dev/superpowers)
 - `hooks/` : scripts du mode caveman (activate, mode-tracker, statusline, stats)
 - `settings.json` : config Claude Code (modèle, hooks, thème, marketplace caveman)
-- `memory/` : mémoire persistante (index + fichiers)
+- `memory/` : mémoire persistante, vide au départ (index + fichier d'exemple)
 
 ## Ce qui n'est PAS ici (volontaire)
 
