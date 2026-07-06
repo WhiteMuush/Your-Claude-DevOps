@@ -1,7 +1,5 @@
 # Claude Code Config 
 
-<img width="640" height="640" alt="claudecode-color" src="https://github.com/user-attachments/assets/aed043aa-c132-44b8-bdf9-43c236030253" />
-
 Ready-to-use, shareable Claude Code config: rules, skills, hooks, memory. Focused on Dev & Ops and on teaching, generic (no personal data). Use it to install the same setup on any machine, then customize.
 
 ## Quick install
