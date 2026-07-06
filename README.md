@@ -1,57 +1,57 @@
-# Config Claude Code
+# Claude Code Config
 
-Config Claude Code prête à l'emploi et partageable : règles, skills, hooks, mémoire. Orientée Dev & Ops et pédagogie, générique (pas de données perso). Sert à installer le même setup sur n'importe quelle machine, puis à personnaliser.
+Ready-to-use, shareable Claude Code config: rules, skills, hooks, memory. Focused on Dev & Ops and on teaching, generic (no personal data). Use it to install the same setup on any machine, then customize.
 
-## Install rapide
+## Quick install
 
-- Automatique : `bash install.sh` (copie tout + adapte les chemins au home de la machine).
-- Guidée par Claude : voir `INSTALL.md` (prompt à coller dans Claude Code).
-- Manuelle : voir la section "Installation sur une nouvelle machine" plus bas.
+- Automatic: `bash install.sh` (copies everything and adapts paths to the machine's home).
+- Claude-guided: see `INSTALL.md` (a prompt to paste into Claude Code).
+- Manual: see "Install on a new machine" below.
 
-## Contenu
+## Contents
 
-- `CLAUDE.md` : règles globales (pédago adaptatif, clarté visuelle, format, git, token). À personnaliser après install
-- `skills/` : 23 skills (9 DevOps + 14 dev/superpowers)
-- `hooks/` : scripts du mode caveman (activate, mode-tracker, statusline, stats)
-- `settings.json` : config Claude Code (modèle, hooks, thème, marketplace caveman)
-- `memory/` : mémoire persistante, vide au départ (index + fichier d'exemple)
+- `CLAUDE.md`: global rules (adaptive teaching, visual clarity, format, git, token). Customize after install
+- `skills/`: 23 skills (9 DevOps + 14 dev/superpowers)
+- `hooks/`: caveman mode scripts (activate, mode-tracker, statusline, stats)
+- `settings.json`: Claude Code config (model, hooks, theme, caveman marketplace)
+- `memory/`: persistent memory, empty by default (index + example file)
 
-## Ce qui n'est PAS ici (volontaire)
+## What is NOT here (on purpose)
 
-Secrets et données privées exclus : `.credentials.json`, historique, transcripts de sessions, caches. Ne jamais les commit.
+Secrets and private data are excluded: `.credentials.json`, history, session transcripts, caches. Never commit them.
 
-## Installation sur une nouvelle machine
+## Install on a new machine
 
-1. Cloner ce repo quelque part, puis copier les fichiers dans `~/.claude/` :
+1. Clone this repo somewhere, then copy the files into `~/.claude/`:
 
    ```bash
    cp CLAUDE.md ~/.claude/
    cp settings.json ~/.claude/
-   cp -r skills/* ~/.claude/skills/       # créer ~/.claude/skills d'abord si absent
+   cp -r skills/* ~/.claude/skills/       # create ~/.claude/skills first if missing
    cp -r hooks/* ~/.claude/hooks/
    mkdir -p ~/.claude/projects/-home-USER/memory && cp memory/* ~/.claude/projects/-home-USER/memory/
    ```
 
-2. **IMPORTANT, chemins en dur.** `settings.json` référence `/home/white/.claude/hooks/...`.
-   Si le user de la nouvelle machine n'est pas `white`, remplacer partout `/home/white` par le vrai home :
+2. **IMPORTANT, hardcoded paths.** `settings.json` references `/home/white/.claude/hooks/...`.
+   If the user on the new machine is not `white`, replace every `/home/white` with the real home:
 
    ```bash
    sed -i "s#/home/white#$HOME#g" ~/.claude/settings.json
    ```
 
-   Idem pour le chemin `memory/` (dossier `-home-USER` dérivé du home).
+   Same for the `memory/` path (the `-home-USER` folder is derived from the home).
 
-3. Le plugin **caveman** se réinstalle seul : `settings.json` déclare le marketplace `JuliusBrussee/caveman` et l'active. Au prochain lancement de Claude Code, il est récupéré automatiquement. Sinon, manuel :
+3. The **caveman** plugin reinstalls itself: `settings.json` declares the `JuliusBrussee/caveman` marketplace and enables it. It is fetched automatically on the next Claude Code launch. Otherwise, manually:
 
    ```
    /plugin marketplace add JuliusBrussee/caveman
    /plugin install caveman
    ```
 
-4. Relancer Claude Code. Le mode caveman s'active via le hook SessionStart.
+4. Restart Claude Code. Caveman mode activates via the SessionStart hook.
 
 ## Notes
 
-- Skills DevOps source : `khalilbenaz/claude-skills-collection` (dossier `devops-skills`)
-- Skills dev source : `obra/superpowers` (dossier `skills`), hooks superpowers non inclus
-- Les "—" ont été retirés de tous les skills (préférence perso)
+- DevOps skills source: `khalilbenaz/claude-skills-collection` (folder `devops-skills`)
+- Dev skills source: `obra/superpowers` (folder `skills`), superpowers hooks not included
+- All "—" (em dashes) were removed from the skills (personal preference)
