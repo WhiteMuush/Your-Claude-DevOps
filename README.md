@@ -56,6 +56,14 @@ Three skills present in the source configuration are also excluded because they 
 
 The rules in `CLAUDE.md` and the DevOps skills are written in French, since that is the language of the setup they came from. The structure is language-agnostic, so translating them is a search and replace away.
 
-Upstream sources, which keep their own licences: DevOps skills come from `khalilbenaz/claude-skills-collection` (folder `devops-skills`), development skills from `obra/superpowers` (folder `skills`, hooks not included), and the caveman hooks from `JuliusBrussee/caveman`.
-
 Em dashes were removed throughout, which is a personal formatting preference carried over from `CLAUDE.md`.
+
+## Credits
+
+This configuration assembles work from other people. None of it is sold or claimed as original, and all of it is worth visiting at the source.
+
+- DevOps skills, adapted from [khalilbenaz/claude-skills-collection](https://github.com/khalilbenaz/claude-skills-collection), folder `devops-skills`.
+- Development and methodology skills, adapted from [obra/superpowers](https://github.com/obra/superpowers), folder `skills`. The upstream hooks are not included here.
+- Caveman mode hooks and plugin, from [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman).
+
+Adaptations are limited to formatting and language conventions. If you are one of the authors and want a credit changed or the content removed, open an issue and it will be handled.
