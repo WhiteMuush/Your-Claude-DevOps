@@ -1,57 +1,61 @@
-# Claude Code Config 
+# Your Claude DevOps
 
-Ready-to-use, shareable Claude Code config: rules, skills, hooks, memory. Focused on Dev & Ops and on teaching, generic (no personal data). Use it to install the same setup on any machine, then customize.
+A ready-to-use, shareable Claude Code configuration: global rules, skills, hooks and memory scaffolding. It is oriented towards Dev and Ops work and towards teaching, and it is fully generic: no personal data, no secrets, no machine-specific paths. Install it on any machine, then customize it.
 
 ## Quick install
 
-- Automatic: `bash install.sh` (copies everything and adapts paths to the machine's home).
-- Claude-guided: see `INSTALL.md` (a prompt to paste into Claude Code).
+- Automatic: `bash install.sh` copies everything into `~/.claude/` and adapts paths to the machine's home.
+- Claude-guided: see `INSTALL.md` for a prompt to paste into Claude Code.
 - Manual: see "Install on a new machine" below.
 
 ## Contents
 
-- `CLAUDE.md`: global rules (adaptive teaching, visual clarity, format, git, token). Customize after install
-- `skills/`: 23 skills (9 DevOps + 14 dev/superpowers)
-- `hooks/`: caveman mode scripts (activate, mode-tracker, statusline, stats)
-- `settings.json`: Claude Code config (model, hooks, theme, caveman marketplace)
-- `memory/`: persistent memory, empty by default (index + example file)
+- `CLAUDE.md`: global rules covering adaptive teaching mode, visual clarity, response format, git conventions and token economy. Customize this file after install.
+- `skills/`: 23 skills, 9 for DevOps (Ansible, ArgoCD, Azure, Docker Swarm, GitHub Actions, GitLab CI, Helm, Prometheus and Grafana, Terraform) and 14 for development methodology (brainstorming, planning, TDD, debugging, code review, git worktrees).
+- `hooks/`: caveman mode scripts (activate, mode tracker, status line, stats).
+- `settings.json`: Claude Code configuration (model, permissions, theme, status line, caveman marketplace).
+- `memory/`: persistent memory scaffolding, empty by default (index plus one example file).
 
-## What is NOT here (on purpose)
+## What is deliberately not here
 
-Secrets and private data are excluded: `.credentials.json`, history, session transcripts, caches. Never commit them.
+Secrets and private data are excluded and must never be committed: `.credentials.json`, `history.jsonl`, session transcripts, caches, and the real `memory/` files, which hold personal notes.
+
+Three skills present in the source configuration are also excluded because they describe one specific machine and one specific user rather than a reusable setup.
 
 ## Install on a new machine
 
-1. Clone this repo somewhere, then copy the files into `~/.claude/`:
+1. Clone this repository, then copy the files into `~/.claude/`:
 
    ```bash
    cp CLAUDE.md ~/.claude/
-   cp settings.json ~/.claude/
-   cp -r skills/* ~/.claude/skills/       # create ~/.claude/skills first if missing
-   cp -r hooks/* ~/.claude/hooks/
-   mkdir -p ~/.claude/projects/-home-USER/memory && cp memory/* ~/.claude/projects/-home-USER/memory/
+   cp -r skills/. ~/.claude/skills/
+   cp -r hooks/. ~/.claude/hooks/
+   sed "s#__HOME__#$HOME#g" settings.json > ~/.claude/settings.json
    ```
 
-2. **IMPORTANT, hardcoded paths.** `settings.json` references `/home/white/.claude/hooks/...`.
-   If the user on the new machine is not `white`, replace every `/home/white` with the real home:
+2. The `settings.json` shipped here uses a `__HOME__` placeholder instead of a hardcoded home directory. The `sed` command above resolves it, and `install.sh` does the same automatically.
+
+3. Copy the memory scaffolding. The project key is derived from your home directory, so `/home/alice` becomes `-home-alice`:
 
    ```bash
-   sed -i "s#/home/white#$HOME#g" ~/.claude/settings.json
+   MEMKEY="$(echo "$HOME" | tr '/' '-')"
+   mkdir -p "$HOME/.claude/projects/$MEMKEY/memory"
+   cp memory/*.md "$HOME/.claude/projects/$MEMKEY/memory/"
    ```
 
-   Same for the `memory/` path (the `-home-USER` folder is derived from the home).
-
-3. The **caveman** plugin reinstalls itself: `settings.json` declares the `JuliusBrussee/caveman` marketplace and enables it. It is fetched automatically on the next Claude Code launch. Otherwise, manually:
+4. The caveman plugin reinstalls itself: `settings.json` declares the `JuliusBrussee/caveman` marketplace and enables the plugin, which is fetched on the next Claude Code launch. To do it manually:
 
    ```
    /plugin marketplace add JuliusBrussee/caveman
    /plugin install caveman
    ```
 
-4. Restart Claude Code. Caveman mode activates via the SessionStart hook.
+5. Restart Claude Code. Caveman mode activates through the SessionStart hook registered by the plugin.
 
 ## Notes
 
-- DevOps skills source: `khalilbenaz/claude-skills-collection` (folder `devops-skills`)
-- Dev skills source: `obra/superpowers` (folder `skills`), superpowers hooks not included
-- All "—" (em dashes) were removed from the skills (personal preference)
+The rules in `CLAUDE.md` and the DevOps skills are written in French, since that is the language of the setup they came from. The structure is language-agnostic, so translating them is a search and replace away.
+
+Upstream sources, which keep their own licences: DevOps skills come from `khalilbenaz/claude-skills-collection` (folder `devops-skills`), development skills from `obra/superpowers` (folder `skills`, hooks not included), and the caveman hooks from `JuliusBrussee/caveman`.
+
+Em dashes were removed throughout, which is a personal formatting preference carried over from `CLAUDE.md`.

@@ -5,8 +5,8 @@ Sur la nouvelle machine :
 1. Cloner ce repo et ouvrir un terminal dedans :
 
    ```bash
-   git clone https://github.com/WhiteMuush/Your-Claude-Teacher.git
-   cd Your-Claude-Teacher
+   git clone https://github.com/WhiteMuush/Your-Claude-DevOps.git
+   cd Your-Claude-DevOps
    ```
 
 2. Lancer Claude Code dans ce dossier.
@@ -15,7 +15,7 @@ Sur la nouvelle machine :
 
 ---
 
-> Tu es dans mon repo de config Claude Code (`Your-Claude-Teacher`). Installe cette config sur la machine actuelle.
+> Tu es dans mon repo de config Claude Code (`Your-Claude-DevOps`). Installe cette config sur la machine actuelle.
 >
 > Étapes :
 > 1. Lis le `README.md` et le script `install.sh` pour comprendre ce qui doit être copié dans `~/.claude/`.

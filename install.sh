@@ -12,8 +12,8 @@ mkdir -p "$CLAUDE_DIR/skills" "$CLAUDE_DIR/hooks"
 cp "$REPO_DIR/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
 echo "  [ok] CLAUDE.md"
 
-# settings.json : adapter les chemins /home/white -> home réel de cette machine
-sed "s#/home/white#$HOME#g" "$REPO_DIR/settings.json" > "$CLAUDE_DIR/settings.json"
+# settings.json : remplacer le placeholder __HOME__ par le home réel de cette machine
+sed "s#__HOME__#$HOME#g" "$REPO_DIR/settings.json" > "$CLAUDE_DIR/settings.json"
 echo "  [ok] settings.json (chemins adaptés à $HOME)"
 
 cp -r "$REPO_DIR/skills/." "$CLAUDE_DIR/skills/"
@@ -22,7 +22,7 @@ echo "  [ok] skills ($(ls "$CLAUDE_DIR/skills" | wc -l) dossiers)"
 cp -r "$REPO_DIR/hooks/." "$CLAUDE_DIR/hooks/"
 echo "  [ok] hooks"
 
-# Mémoire : clé de projet dérivée du HOME (/home/white -> -home-white)
+# Mémoire : clé de projet dérivée du HOME (/home/alice -> -home-alice)
 MEMKEY="$(echo "$HOME" | tr '/' '-')"
 MEM_DIR="$CLAUDE_DIR/projects/$MEMKEY/memory"
 mkdir -p "$MEM_DIR"

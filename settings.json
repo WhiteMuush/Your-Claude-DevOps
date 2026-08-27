@@ -1,37 +1,25 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(gh pr *)",
+      "Bash(gh run *)",
+      "Bash(gh issue *)",
+      "Bash(git *)"
+    ],
     "defaultMode": "auto"
   },
   "model": "opus",
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"/usr/bin/node\" \"/home/white/.claude/hooks/caveman-activate.js\"",
-            "timeout": 5,
-            "statusMessage": "Loading caveman mode..."
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"/usr/bin/node\" \"/home/white/.claude/hooks/caveman-mode-tracker.js\"",
-            "timeout": 5,
-            "statusMessage": "Tracking caveman mode..."
-          }
-        ]
-      }
-    ]
+  "effortLevel": "xhigh",
+  "theme": "dark-ansi",
+  "showTurnDuration": true,
+  "disableAgentView": true,
+  "skipAutoPermissionPrompt": true,
+  "worktree": {
+    "baseRef": "fresh"
   },
   "statusLine": {
     "type": "command",
-    "command": "bash \"/home/white/.claude/hooks/caveman-statusline.sh\""
+    "command": "bash \"__HOME__/.claude/hooks/caveman-statusline.sh\""
   },
   "enabledPlugins": {
     "caveman@caveman": true
@@ -44,7 +32,11 @@
       }
     }
   },
-  "effortLevel": "high",
-  "theme": "light",
-  "skipAutoPermissionPrompt": true
+  "autoMode": {
+    "soft_deny": [
+      "$defaults",
+      "Bash(docker swarm init --force-new-cluster:*) and similar quorum-override Swarm commands",
+      "Bash(argocd app set * --sync-policy none:*) and other ArgoCD auto-sync disabling commands"
+    ]
+  }
 }
