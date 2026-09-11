@@ -4,7 +4,7 @@ A ready-to-use, shareable Claude Code configuration: global rules, skills, hooks
 
 ## Quick install
 
-- Automatic: `bash install.sh` copies everything into `~/.claude/` and adapts paths to the machine's home.
+- Automatic: `bash install.sh` copies everything into `~/.claude/`, including the memory scaffolding under the right project key.
 - Claude-guided: see `INSTALL.md` for a prompt to paste into Claude Code.
 - Manual: see "Install on a new machine" below.
 
@@ -20,7 +20,7 @@ A ready-to-use, shareable Claude Code configuration: global rules, skills, hooks
 
 Secrets and private data are excluded and must never be committed: `.credentials.json`, `history.jsonl`, session transcripts, caches, and the real `memory/` files, which hold personal notes.
 
-Three skills present in the source configuration are also excluded because they describe one specific machine and one specific user rather than a reusable setup.
+The `autoMode` block of the source `settings.json` is excluded too: it pins local filesystem paths, a private remote and the location of credential files.
 
 ## Install on a new machine
 
