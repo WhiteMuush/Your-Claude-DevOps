@@ -14,7 +14,7 @@ echo "  [ok] CLAUDE.md"
 
 # settings.json : aucun chemin machine, copie directe
 cp "$REPO_DIR/settings.json" "$CLAUDE_DIR/settings.json"
-echo "  [ok] settings.json (chemins adaptés à $HOME)"
+echo "  [ok] settings.json"
 
 cp -r "$REPO_DIR/skills/." "$CLAUDE_DIR/skills/"
 echo "  [ok] skills ($(ls "$CLAUDE_DIR/skills" | wc -l) dossiers)"
