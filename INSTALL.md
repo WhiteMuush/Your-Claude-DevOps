@@ -20,9 +20,9 @@ Sur la nouvelle machine :
 > Étapes :
 > 1. Lis le `README.md` et le script `install.sh` pour comprendre ce qui doit être copié dans `~/.claude/`.
 > 2. Le script écrit dans `~/.claude/`, donc le gate de sécurité t'empêchera de le lancer toi-même. Ne force pas : donne-moi la commande exacte à exécuter moi-même, préfixée par `!`, soit `! bash install.sh`.
-> 3. Une fois que je l'ai lancée, vérifie que l'install est bonne : `~/.claude/CLAUDE.md` présent, `~/.claude/skills` contient 23 dossiers, `~/.claude/hooks` contient les scripts caveman, et la mémoire est dans `~/.claude/projects/<clé>/memory`.
-> 4. Dis-moi si le plugin caveman est actif. S'il ne l'est pas, rappelle-moi les commandes `/plugin marketplace add JuliusBrussee/caveman` puis `/plugin install caveman`.
-> 5. Confirme quand tout est en place et dis-moi de relancer Claude Code pour activer le mode caveman.
+> 3. Une fois que je l'ai lancée, vérifie que l'install est bonne : `~/.claude/CLAUDE.md` présent, `~/.claude/skills` contient 24 dossiers, et la mémoire est dans `~/.claude/projects/<clé>/memory`.
+> 4. Dis-moi si le plugin `i-have-adhd` est actif. S'il ne l'est pas, rappelle-moi les commandes `/plugin marketplace add ayghri/i-have-adhd` puis `/plugin install i-have-adhd`.
+> 5. Confirme quand tout est en place et dis-moi de relancer Claude Code pour charger le plugin.
 
 ---
 

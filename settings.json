@@ -1,42 +1,39 @@
 {
   "permissions": {
     "allow": [
-      "Bash(gh pr *)",
-      "Bash(gh run *)",
-      "Bash(gh issue *)",
-      "Bash(git *)"
+      "Bash(gh:*)",
+      "Bash(git push:*)",
+      "Bash(git fetch:*)",
+      "Bash(git clone:*)",
+      "Edit(.github/**)",
+      "Write(.github/**)"
+    ],
+    "deny": [
+      "Bash(gh repo delete:*)",
+      "Bash(gh repo edit:*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)"
     ],
     "defaultMode": "auto"
   },
   "model": "opus",
-  "effortLevel": "xhigh",
-  "theme": "dark-ansi",
-  "showTurnDuration": true,
-  "disableAgentView": true,
-  "skipAutoPermissionPrompt": true,
-  "worktree": {
-    "baseRef": "fresh"
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "bash \"__HOME__/.claude/hooks/caveman-statusline.sh\""
-  },
   "enabledPlugins": {
-    "caveman@caveman": true
+    "i-have-adhd@i-have-adhd": true
   },
   "extraKnownMarketplaces": {
-    "caveman": {
+    "i-have-adhd": {
       "source": {
         "source": "github",
-        "repo": "JuliusBrussee/caveman"
+        "repo": "ayghri/i-have-adhd"
       }
     }
   },
-  "autoMode": {
-    "soft_deny": [
-      "$defaults",
-      "Bash(docker swarm init --force-new-cluster:*) and similar quorum-override Swarm commands",
-      "Bash(argocd app set * --sync-policy none:*) and other ArgoCD auto-sync disabling commands"
-    ]
-  }
+  "effortLevel": "high",
+  "modelSettings": {
+    "claude-opus-5": {
+      "effortLevel": "medium"
+    }
+  },
+  "theme": "light",
+  "skipAutoPermissionPrompt": true
 }

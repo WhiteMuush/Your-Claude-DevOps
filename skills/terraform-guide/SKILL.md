@@ -159,10 +159,13 @@ terraform {
     key            = "myapp/production/terraform.tfstate"
     region         = "eu-west-1"
     encrypt        = true
-    dynamodb_table = "terraform-state-lock"
+    use_lockfile   = true   # verrouillage natif S3 (Terraform 1.10+)
   }
 }
 ```
+
+> `dynamodb_table` est déprécié depuis Terraform 1.11 : le verrouillage passe désormais par un
+> fichier de lock dans le bucket lui-même. Une table DynamoDB de moins à provisionner et à payer.
 
 ### Commandes de gestion du state
 ```bash
@@ -184,7 +187,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.110"
+      version = "~> 5.1"
     }
     random = {
       source  = "hashicorp/random"
@@ -195,6 +198,10 @@ terraform {
 ```
 
 Verrouiller le `.terraform.lock.hcl` dans Git, il garantit la reproductibilité des builds.
+
+> **Migration 3.x → 5.x** : azurerm a passé deux majeures depuis la 3. La 4.0 rend `subscription_id`
+> obligatoire dans le bloc provider et remplace `skip_provider_registration` par
+> `resource_provider_registrations`. Ne pas sauter ces deux marches sans lire les guides d'upgrade.
 
 ---
 

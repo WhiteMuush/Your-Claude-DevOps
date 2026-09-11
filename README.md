@@ -11,9 +11,9 @@ A ready-to-use, shareable Claude Code configuration: global rules, skills, hooks
 ## Contents
 
 - `CLAUDE.md`: global rules covering adaptive teaching mode, visual clarity, response format, git conventions and token economy. Customize this file after install.
-- `skills/`: 23 skills, 9 for DevOps (Ansible, ArgoCD, Azure, Docker Swarm, GitHub Actions, GitLab CI, Helm, Prometheus and Grafana, Terraform) and 14 for development methodology (brainstorming, planning, TDD, debugging, code review, git worktrees).
-- `hooks/`: caveman mode scripts (activate, mode tracker, status line, stats).
-- `settings.json`: Claude Code configuration (model, permissions, theme, status line, caveman marketplace).
+- `skills/`: 24 skills, 9 for DevOps (Ansible, ArgoCD, Azure, Docker Swarm, GitHub Actions, GitLab CI, Helm, Prometheus and Grafana, Terraform) and 15 for development methodology (brainstorming, planning, TDD, debugging, code review, git worktrees, cleaning user-facing text).
+- `hooks/`: hook directory, shipped with its CommonJS manifest. Output shaping now comes from the `i-have-adhd` plugin, which registers its own hooks.
+- `settings.json`: Claude Code configuration (model, effort level, permissions with explicit deny rules, theme, `i-have-adhd` marketplace).
 - `memory/`: persistent memory scaffolding, empty by default (index plus one example file).
 
 ## What is deliberately not here
@@ -30,10 +30,10 @@ Three skills present in the source configuration are also excluded because they 
    cp CLAUDE.md ~/.claude/
    cp -r skills/. ~/.claude/skills/
    cp -r hooks/. ~/.claude/hooks/
-   sed "s#__HOME__#$HOME#g" settings.json > ~/.claude/settings.json
+   cp settings.json ~/.claude/settings.json
    ```
 
-2. The `settings.json` shipped here uses a `__HOME__` placeholder instead of a hardcoded home directory. The `sed` command above resolves it, and `install.sh` does the same automatically.
+2. The `settings.json` shipped here holds no machine-specific path, so it copies as is. It does carry `deny` rules blocking `gh repo delete`, `gh repo edit` and force pushes; drop them if you want those commands back.
 
 3. Copy the memory scaffolding. The project key is derived from your home directory, so `/home/alice` becomes `-home-alice`:
 
@@ -43,14 +43,14 @@ Three skills present in the source configuration are also excluded because they 
    cp memory/*.md "$HOME/.claude/projects/$MEMKEY/memory/"
    ```
 
-4. The caveman plugin reinstalls itself: `settings.json` declares the `JuliusBrussee/caveman` marketplace and enables the plugin, which is fetched on the next Claude Code launch. To do it manually:
+4. The `i-have-adhd` plugin reinstalls itself: `settings.json` declares the `ayghri/i-have-adhd` marketplace and enables the plugin, which is fetched on the next Claude Code launch. To do it manually:
 
    ```
-   /plugin marketplace add JuliusBrussee/caveman
-   /plugin install caveman
+   /plugin marketplace add ayghri/i-have-adhd
+   /plugin install i-have-adhd
    ```
 
-5. Restart Claude Code. Caveman mode activates through the SessionStart hook registered by the plugin.
+5. Restart Claude Code. The plugin registers its own hooks at session start.
 
 ## Notes
 
@@ -64,6 +64,6 @@ This configuration assembles work from other people. None of it is sold or claim
 
 - DevOps skills, adapted from [khalilbenaz/claude-skills-collection](https://github.com/khalilbenaz/claude-skills-collection), folder `devops-skills`.
 - Development and methodology skills, adapted from [obra/superpowers](https://github.com/obra/superpowers), folder `skills`. The upstream hooks are not included here.
-- Caveman mode hooks and plugin, from [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman).
+- Output shaping plugin, from [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd).
 
 Adaptations are limited to formatting and language conventions. If you are one of the authors and want a credit changed or the content removed, open an issue and it will be handled.

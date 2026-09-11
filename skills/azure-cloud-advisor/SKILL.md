@@ -17,13 +17,17 @@ description: Conseils pour l'architecture et le déploiement sur Azure, App Serv
 
 ## Choix du service de compute
 
-| Service | Usage idéal | Scale | Coût typique |
+| Service | Usage idéal | Scale | Profil de coût |
 |---|---|---|---|
-| **App Service** | API/app web .NET, Node, Python | Auto-scale par plan | ~40 €/mois (B2) |
-| **Container Apps** | Microservices conteneurisés, Dapr | KEDA, scale-to-zero | ~0–80 €/mois |
-| **Azure Functions** | Événementiel, triggers (HTTP, Queue, Timer) | Consumption auto | ~0 (< 1 M req/mois gratis) |
-| **AKS** | Orchestration K8s complexe, multi-tenant | Node autoscaler + KEDA | > 100 €/mois |
-| **VM / VMSS** | Legacy, contrôle réseau total | Manual ou VMSS | Variable |
+| **App Service** | API/app web .NET, Node, Python | Auto-scale par plan | Plancher fixe au plan, payé même à vide |
+| **Container Apps** | Microservices conteneurisés, Dapr | KEDA, scale-to-zero | Nul à l'arrêt, monte avec le trafic |
+| **Azure Functions** | Événementiel, triggers (HTTP, Queue, Timer) | Consumption auto | Le moins cher en dessous du palier gratuit |
+| **AKS** | Orchestration K8s complexe, multi-tenant | Node autoscaler + KEDA | Le plus cher : nœuds payés en continu |
+| **VM / VMSS** | Legacy, contrôle réseau total | Manual ou VMSS | Variable, dépend du dimensionnement |
+
+> Les montants absolus varient par région, par palier et par engagement, et changent trop souvent
+> pour être fiables dans une fiche. Ce qui se retient, c'est l'ordre relatif :
+> vérifier le chiffre du jour avec `az pricing` ou le calculateur Azure.
 
 ### Arbre de décision
 
@@ -78,7 +82,7 @@ az functionapp create \
   --name fn-myapp-prod --resource-group $RG \
   --storage-account stfnmyapp \
   --consumption-plan-location $LOCATION \
-  --runtime dotnet-isolated --runtime-version 8 \
+  --runtime dotnet-isolated --runtime-version 10 \
   --functions-version 4 \
   --assign-identity '[system]'
 ```
@@ -87,7 +91,7 @@ az functionapp create \
 
 ```bash
 az appservice plan create -n plan-myapp -g $RG --sku P2V3 --is-linux
-az webapp create -n web-myapp -g $RG --plan plan-myapp --runtime "DOTNETCORE:8.0"
+az webapp create -n web-myapp -g $RG --plan plan-myapp --runtime "DOTNETCORE:10.0"
 az webapp deployment slot create --name web-myapp -g $RG --slot staging
 # Swap zero-downtime :
 az webapp deployment slot swap --name web-myapp -g $RG --slot staging

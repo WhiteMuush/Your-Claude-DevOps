@@ -118,8 +118,6 @@ docker service create \
 
 ```yaml
 # docker-compose.prod.yml
-version: "3.9"
-
 services:
   api:
     image: myrepo/api:${API_VERSION:-latest}

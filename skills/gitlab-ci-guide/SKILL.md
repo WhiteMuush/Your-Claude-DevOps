@@ -79,7 +79,9 @@ gitlab-runner register \
   --tag-list "docker,linux,build"
 ```
 
-**Auto-scaling avec Docker Machine (on-premise) :** utiliser `executor = "docker+machine"` + provider cloud dans `config.toml`. Pour Kubernetes : utiliser le runner Helm chart officiel.
+**Auto-scaling (on-premise) :** utiliser le **GitLab Runner Autoscaler** (Fleeting + Taskscaler), avec les plugins AWS EC2, Google Compute Engine ou Azure. Pour Kubernetes : le runner Helm chart officiel.
+
+> L'ancien `executor = "docker+machine"` est déprécié depuis GitLab 17.5 et sera retiré en 20.0 (mai 2027) : Docker a abandonné Docker Machine, la brique sur laquelle il reposait. Les configurations `config.toml` qui traînent en ligne l'utilisent encore massivement.
 
 ## 4. Cache et artifacts
 
@@ -202,4 +204,6 @@ Dans l'UI : Settings > CI/CD > Variables → cocher `Masked` + `Protected`.
 - **`id_tokens:`** (OIDC) : remplacer les tokens statiques pour l'auth cloud (AWS, Azure, GCP) par des tokens OIDC courts-vivants.
 - **Merge Train** : activer sur les branches protégées à fort trafic pour éviter les régressions post-merge.
 - **`dast_configuration:`** : pointer sur un environnement de review pour le DAST plutôt qu'une URL codée en dur.
-- Tester le pipeline localement avant push : `gitlab-runner exec docker build:app`.
+- Valider le pipeline avant push : l'**éditeur de pipeline** GitLab (onglet *Validate*) simule la syntaxe et les règles. Pour une exécution locale réelle, l'outil tiers `gitlab-ci-local`.
+
+> `gitlab-runner exec` a été **retiré** en GitLab Runner 16.0. La commande n'existe plus ; elle reste citée dans beaucoup de documentations obsolètes.

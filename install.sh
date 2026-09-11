@@ -12,8 +12,8 @@ mkdir -p "$CLAUDE_DIR/skills" "$CLAUDE_DIR/hooks"
 cp "$REPO_DIR/CLAUDE.md" "$CLAUDE_DIR/CLAUDE.md"
 echo "  [ok] CLAUDE.md"
 
-# settings.json : remplacer le placeholder __HOME__ par le home réel de cette machine
-sed "s#__HOME__#$HOME#g" "$REPO_DIR/settings.json" > "$CLAUDE_DIR/settings.json"
+# settings.json : aucun chemin machine, copie directe
+cp "$REPO_DIR/settings.json" "$CLAUDE_DIR/settings.json"
 echo "  [ok] settings.json (chemins adaptés à $HOME)"
 
 cp -r "$REPO_DIR/skills/." "$CLAUDE_DIR/skills/"
@@ -30,10 +30,10 @@ cp "$REPO_DIR/memory/"*.md "$MEM_DIR/"
 echo "  [ok] memory -> projects/$MEMKEY/memory"
 
 echo ""
-echo "==> Config copiée. Il reste 1 chose : le plugin caveman."
+echo "==> Config copiée. Il reste 1 chose : le plugin i-have-adhd."
 echo "    settings.json déclare déjà le marketplace, il s'installe seul au lancement de Claude Code."
 echo "    Sinon, manuel dans Claude Code :"
-echo "      /plugin marketplace add JuliusBrussee/caveman"
-echo "      /plugin install caveman"
+echo "      /plugin marketplace add ayghri/i-have-adhd"
+echo "      /plugin install i-have-adhd"
 echo ""
-echo "==> Relance Claude Code. Le mode caveman s'active au démarrage."
+echo "==> Relance Claude Code. Le plugin se charge au démarrage."
