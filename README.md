@@ -1,9 +1,10 @@
-<h1>
-  <img src="https://cdn.simpleicons.org/claude/FF6200" height="56" align="middle" alt="" />
-  &nbsp;Your Claude DevOps
-</h1>
+<img src="https://cdn.simpleicons.org/claude/FF6200" width="80" align="left" alt="" />
+
+### Your Claude DevOps
 
 **A ready-to-use, shareable Claude Code configuration for Dev and Ops work.**
+
+<br clear="all" />
 
 Global rules, 24 skills, hooks and memory scaffolding. Everything here is generic: no personal data, no secrets, no machine-specific paths. Install it on any machine, then customize it.
 
