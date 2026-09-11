@@ -1,6 +1,13 @@
+<img src="https://cdn.simpleicons.org/claude/FF6200" width="110" align="left" alt="Claude" />
+
 # Your Claude DevOps
 
-A ready-to-use, shareable Claude Code configuration: global rules, skills, hooks and memory scaffolding. It is oriented towards Dev and Ops work and towards teaching, and it is fully generic: no personal data, no secrets, no machine-specific paths. Install it on any machine, then customize it.
+**A ready-to-use, shareable Claude Code configuration.**
+Global rules, 24 skills, hooks and memory scaffolding, oriented towards Dev and Ops work.
+
+<br clear="all" />
+
+Everything here is generic: no personal data, no secrets, no machine-specific paths. Install it on any machine, then customize it.
 
 ## Quick install
 
