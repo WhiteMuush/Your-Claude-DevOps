@@ -8,6 +8,8 @@
 
 Global rules, 24 skills, hooks and memory scaffolding. Everything here is generic: no personal data, no secrets, no machine-specific paths. Install it on any machine, then customize it.
 
+> The **[wiki](https://github.com/WhiteMuush/Your-Claude-DevOps/wiki)** explains how this is built and why: which of the four channels each rule belongs to, how the skills trigger, and how the memory scaffold is meant to be used.
+
 ## Quick install
 
 - Automatic: `bash install.sh` copies everything into `~/.claude/`, including the memory scaffolding under the right project key.
