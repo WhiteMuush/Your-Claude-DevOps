@@ -55,14 +55,14 @@ description: Maîtrise de GitHub Actions, workflows CI/CD, actions custom, matri
    strategy:
      fail-fast: false        # Ne pas annuler les autres axes si un échoue
      matrix:
-       node: ['20', '22']
+       node: ['22', '24']
        os: [ubuntu-latest, windows-latest]
        include:
-         - node: '22'
+         - node: '24'
            os: ubuntu-latest
            coverage: true     # Variable custom pour un axe précis
        exclude:
-         - node: '20'
+         - node: '22'
            os: windows-latest
    runs-on: ${{ matrix.os }}
    steps:
@@ -153,7 +153,7 @@ description: Maîtrise de GitHub Actions, workflows CI/CD, actions custom, matri
      id-token: write
      attestations: write
    steps:
-     - uses: actions/attest-build-provenance@v2
+     - uses: actions/attest-build-provenance@<sha>   # cf. encadré ci-dessous
        with:
          subject-path: dist/app.tar.gz
    ```
@@ -172,12 +172,20 @@ description: Maîtrise de GitHub Actions, workflows CI/CD, actions custom, matri
      run: npm run test:backend
 
    # Partager des artifacts entre jobs
-   - uses: actions/upload-artifact@v4
+   - uses: actions/upload-artifact@<sha>   # cf. encadré ci-dessous
      with:
        name: dist
        path: dist/
        retention-days: 1
    ```
+
+> **Obtenir le SHA d'un tag**, la règle d'épinglage vaut pour *toutes* les actions, y compris celles
+> de GitHub lui-même. Pour résoudre un tag en SHA :
+> ```bash
+> gh api repos/actions/upload-artifact/git/ref/tags/v4 --jq .object.sha
+> ```
+> Les SHA cités plus haut correspondent à `checkout` v4.2.2 et `setup-node` v4.4.0 : les revérifier
+> avant réutilisation, ces actions ont publié des majeures depuis.
 
 ## Anti-patterns et pièges
 

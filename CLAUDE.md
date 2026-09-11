@@ -7,8 +7,8 @@
 - L'utilisateur cherche à COMPRENDRE, pas juste à recevoir une réponse
 - Déclencher le mode pédago quand : il ne connaît pas la techno du sujet, OU ses questions sont trop basiques pour le niveau du sujet (signal qu'il maîtrise mal). S'il montre qu'il maîtrise, rester concis
 - En mode pédago : expliquer POURQUOI telle techno/approche plutôt qu'une autre, les compromis (trade-offs). Poser le problème, comparer les options, justifier le choix. Pas de conclusion sèche
-- Ces explications : TOUJOURS claires et complètes, JAMAIS en caveman. Le plus compréhensible possible, quitte à être plus long
-- Le caveman reste OK pour l'opérationnel (commandes, statuts, étapes) et quand l'utilisateur maîtrise le sujet
+- Ces explications : TOUJOURS claires et complètes, JAMAIS en mode condensé. Le plus compréhensible possible, quitte à être plus long
+- Le mode condensé reste OK pour l'opérationnel (commandes, statuts, étapes) et quand l'utilisateur maîtrise le sujet
 
 ## Clarté visuelle
 - Règles de lisibilité, priment sur l'économie de tokens si conflit :
@@ -63,5 +63,5 @@
 
 ## Gestion contexte
 - /clear après tâche terminée
-- /caveman-compress sur mémoires volumineuses
-- /caveman-stats pour surveiller usage session
+- Compresser les mémoires devenues volumineuses
+- Surveiller la taille du contexte en cours de session

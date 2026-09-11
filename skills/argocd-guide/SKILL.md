@@ -242,7 +242,7 @@ argocd app set my-app-prod --sync-policy none
 
 ```yaml
 # ExternalSecret (ESO)
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: db-creds
@@ -317,9 +317,10 @@ return hs
 
 ## Bonnes pratiques 2026
 
-- Utiliser **ArgoCD v2.12+** (image pull policy configurable, ApplicationSet matrix generator stable).
+- Utiliser **ArgoCD 3.x** (3.3 est la stable courante). Le passage 2.x → 3.0, sorti en mai 2025, apporte
+  des changements de comportement : lire le guide de migration officiel avant d'upgrader un cluster existant.
 - Activer le **server-side apply** (`ServerSideApply=true` dans syncOptions) pour éviter les conflits de field managers.
 - Préférer **Kustomize** pour les overlays d'environnement et **Helm** pour les charts de librairies tierces.
 - Brancher **Argo Rollouts** pour les déploiements progressifs (canary, blue-green) plutôt que les rolling updates natifs K8s.
 - Versionner les `AppProject` et les `ApplicationSet` dans Git comme toute autre ressource ArgoCD.
-- Activer `impersonation` (ArgoCD 2.10+) pour que chaque Application s'exécute avec un ServiceAccount dédié, limitant le blast radius.
+- Activer `impersonation` pour que chaque Application s'exécute avec un ServiceAccount dédié, limitant le blast radius.

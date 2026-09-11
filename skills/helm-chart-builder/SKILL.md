@@ -46,11 +46,18 @@ type: application          # ou "library" pour un chart utilitaire
 version: 1.3.0             # SemVer du chart (indépendant de l'app)
 appVersion: "3.2.0"        # version de l'image applicative
 dependencies:
-  - name: postgresql
-    version: "15.x.x"
-    repository: "oci://registry-1.docker.io/bitnamicharts"
-    condition: postgresql.enabled   # désactivable via values
+  - name: cloudnative-pg
+    version: "0.x.x"               # vérifier : helm search repo cnpg
+    repository: "https://cloudnative-pg.github.io/charts"
+    condition: cloudnative-pg.enabled   # désactivable via values
 ```
+
+> **Piège Bitnami** : la majorité des tutoriels en ligne déclarent leurs dépendances sur
+> `oci://registry-1.docker.io/bitnamicharts`. Broadcom a supprimé ce catalogue public le
+> 29 septembre 2025 : les charts versionnés sont passés derrière un abonnement, il ne reste
+> que 44 images « development-only » en tag `latest`. Ces exemples échouent au
+> `helm dependency update`. Alternatives : le chart officiel du projet amont quand il existe,
+> sinon les forks maintenus (Chainguard, RapidFort).
 
 > **Critère** : incrémenter `version` à chaque changement de template ; incrémenter `appVersion` à chaque release applicative.
 
@@ -185,7 +192,7 @@ probes:
 secret:
   enabled: false
 
-postgresql:
+cloudnative-pg:
   enabled: false   # activer localement si nécessaire
 ```
 
@@ -233,7 +240,7 @@ helm install myrelease oci://myregistry.azurecr.io/charts/mychart --version 1.3.
 |---|---|
 | Secret sensible en prod | ExternalSecret (ESO) ou Vault Agent Injector, pas `kind: Secret` en clair |
 | Multi-environnements | `values-<env>.yaml` + `-f` à l'install, pas de Helm templating conditionnel excessif |
-| Dépendance DB locale en dev | `postgresql.enabled: true` dans `values-dev.yaml` |
+| Dépendance DB locale en dev | `cloudnative-pg.enabled: true` dans `values-dev.yaml` |
 | App stateful (DB, Kafka…) | `StatefulSet` + PVC dans le template, pas `Deployment` |
 | Chart réutilisable entre équipes | Chart de type `library` dans un registry OCI partagé |
 | Rollout zero-downtime | `strategy.type: RollingUpdate` + `minReadySeconds` + probes correctes |

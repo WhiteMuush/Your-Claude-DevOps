@@ -64,7 +64,7 @@ Structure minimale production-ready :
 
   pre_tasks:
     - name: Ensure Python3 is present
-      raw: apt-get install -y python3
+      ansible.builtin.raw: apt-get install -y python3
       changed_when: false
 
   roles:
@@ -75,7 +75,7 @@ Structure minimale production-ready :
 
   post_tasks:
     - name: Verify nginx is responding
-      uri:
+      ansible.builtin.uri:
         url: "https://{{ ansible_fqdn }}"
         status_code: 200
       delegate_to: localhost
@@ -133,7 +133,7 @@ Handler exemple :
 ```yaml
 # handlers/main.yml
 - name: Restart nginx
-  service:
+  ansible.builtin.service:
     name: nginx
     state: restarted
   listen: Restart nginx
@@ -257,7 +257,9 @@ molecule test   # create → converge → verify → destroy
 
 - **Collections > rôles communautaires** : utiliser `ansible.posix`, `community.general`, `community.docker` via `requirements.yml` + `ansible-galaxy collection install -r requirements.yml`.
 - **`ansible.cfg` versionné** dans le dépôt : `[defaults] host_key_checking = True`, `forks = 10`, `callback_whitelist = profile_tasks`.
-- **Épingler la version Ansible** dans le CI (`pip install ansible-core==2.17.*`) pour éviter les régressions.
+- **Épingler la version Ansible** dans le CI (`pip install ansible-core==2.21.*`) pour éviter les régressions.
 - **Pas de boucle `with_items`** → remplacer par `loop` (syntaxe moderne depuis Ansible 2.5).
+- **Noms de modules pleinement qualifiés (FQCN)** : écrire `ansible.builtin.service` et non `service`.
+  `ansible-lint`, que ce workflow impose, échoue sur les noms courts (règle `fqcn`).
 - **`changed_when` et `failed_when`** explicites sur les modules `command`/`shell` inévitables.
 - **Secrets rotation** : intégrer HashiCorp Vault ou AWS Secrets Manager via le lookup `community.hashi_vault.vault_read` plutôt que Ansible Vault seul pour les environnements multi-équipes.
