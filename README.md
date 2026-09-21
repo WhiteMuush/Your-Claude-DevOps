@@ -6,7 +6,7 @@
 
 <br clear="all" />
 
-Global rules, 24 skills, hooks and memory scaffolding. Everything here is generic: no personal data, no secrets, no machine-specific paths. Install it on any machine, then customize it.
+Global rules, 29 skills, hooks and memory scaffolding. Everything here is generic: no personal data, no secrets, no machine-specific paths. Install it on any machine, then customize it.
 
 > The **[wiki](https://github.com/WhiteMuush/Your-Claude-DevOps/wiki)** explains how this is built and why: which of the four channels each rule belongs to, how the skills trigger, and how the memory scaffold is meant to be used.
 
@@ -19,7 +19,7 @@ Global rules, 24 skills, hooks and memory scaffolding. Everything here is generi
 ## Contents
 
 - `CLAUDE.md`: global rules covering adaptive teaching mode, visual clarity, response format, git conventions and token economy. Customize this file after install.
-- `skills/`: 24 skills, 9 for DevOps (Ansible, ArgoCD, Azure, Docker Swarm, GitHub Actions, GitLab CI, Helm, Prometheus and Grafana, Terraform) and 15 for development methodology (brainstorming, planning, TDD, debugging, code review, git worktrees, cleaning user-facing text).
+- `skills/`: 29 skills, 14 for DevOps (Ansible, ArgoCD, Azure, Docker Swarm, GitHub Actions, GitLab CI, Helm, Prometheus and Grafana, Terraform, shell scripts, Makefiles, plus logging, metrics and tracing design) and 15 for development methodology (brainstorming, planning, TDD, debugging, code review, git worktrees, cleaning user-facing text).
 - `hooks/`: hook directory, shipped with its CommonJS manifest. Output shaping now comes from the `i-have-adhd` plugin, which registers its own hooks.
 - `settings.json`: Claude Code configuration (model, effort level, permissions with explicit deny rules, theme, `i-have-adhd` marketplace).
 - `memory/`: persistent memory scaffolding, empty by default (index plus one example file).
