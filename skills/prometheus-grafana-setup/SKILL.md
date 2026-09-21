@@ -295,3 +295,7 @@ curl -s 'http://localhost:9090/api/v1/query' \
 # Voir les alertes actives
 curl -s http://localhost:9093/api/v2/alerts | jq '[.[] | {name:.labels.alertname, state:.status.state}]'
 ```
+
+## Conception des métriques
+
+Ce skill couvre l'outillage. Pour décider **quoi mesurer et sous quel nom** (convention de nommage, choix du type, cardinalité des labels, RED et USE, buckets et quantiles), voir le skill `metrics-setup`.

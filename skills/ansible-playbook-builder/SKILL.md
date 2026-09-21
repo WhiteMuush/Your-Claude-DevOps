@@ -263,3 +263,4 @@ molecule test   # create → converge → verify → destroy
   `ansible-lint`, que ce workflow impose, échoue sur les noms courts (règle `fqcn`).
 - **`changed_when` et `failed_when`** explicites sur les modules `command`/`shell` inévitables.
 - **Secrets rotation** : intégrer HashiCorp Vault ou AWS Secrets Manager via le lookup `community.hashi_vault.vault_read` plutôt que Ansible Vault seul pour les environnements multi-équipes.
+- **Logs** : `log_path`, `no_log: true` sur les tâches sensibles, callback plugins. Voir le skill `logging-setup`.
