@@ -19,10 +19,11 @@ Global rules, 30 skills, hooks and memory scaffolding. Everything here is generi
 ## Contents
 
 - `CLAUDE.md`: global rules covering adaptive teaching mode, visual clarity, response format, git conventions and token economy. Customize this file after install.
-- `skills/`: 29 skills, 14 for DevOps (Ansible, ArgoCD, Azure, Docker Swarm, GitHub Actions, GitLab CI, Helm, Prometheus and Grafana, Terraform, shell scripts, Makefiles, plus logging, metrics and tracing design) and 15 for development methodology (brainstorming, planning, TDD, debugging, code review, git worktrees, cleaning user-facing text).
+- `skills/`: 30 skills, 15 for DevOps (Ansible, ArgoCD, Azure, Docker, Docker Swarm, GitHub Actions, GitLab CI, Helm, Prometheus and Grafana, Terraform, shell scripts, Makefiles, plus logging, metrics and tracing design) and 15 for development methodology (brainstorming, planning, TDD, debugging, code review, git worktrees, cleaning user-facing text).
 - `hooks/`: hook directory, shipped with its CommonJS manifest. Output shaping now comes from the `i-have-adhd` plugin, which registers its own hooks.
 - `settings.json`: Claude Code configuration (model, effort level, permissions with explicit deny rules, theme, `i-have-adhd` marketplace).
 - `memory/`: persistent memory scaffolding, empty by default (index plus one example file).
+- `shell/claude-herdr.zsh`: optional zsh wrapper that makes `claude` open a [herdr](https://herdr.dev) workspace, Claude on the left and a shell on the right.
 
 ## What is deliberately not here
 
@@ -59,6 +60,24 @@ The `autoMode` block of the source `settings.json` is excluded too: it pins loca
    ```
 
 5. Restart Claude Code. The plugin registers its own hooks at session start.
+
+## Optional: herdr workspace
+
+With [herdr](https://herdr.dev) installed, typing `claude` opens a herdr workspace in the current directory, with Claude on the left and an empty shell on the right.
+
+1. Let herdr install its Claude Code hook. It writes `~/.claude/hooks/herdr-agent-state.sh` and the matching `SessionStart` entry in `settings.json`, so neither is shipped here:
+
+   ```bash
+   herdr integration install claude
+   ```
+
+2. Source the wrapper from `~/.zshrc`:
+
+   ```bash
+   echo "source $PWD/shell/claude-herdr.zsh" >> ~/.zshrc
+   ```
+
+The wrapper falls back to the plain `claude` binary when herdr is missing, when already inside herdr, when stdin or stdout is not a terminal, and for non-interactive flags and subcommands (`-p`, `--version`, `mcp`, `config`, `doctor`...). It needs `jq`.
 
 ## Notes
 
