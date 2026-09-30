@@ -65,13 +65,35 @@ The `autoMode` block of the source `settings.json` is excluded too: it pins loca
 
 With [herdr](https://herdr.dev) installed, typing `claude` opens a herdr workspace in the current directory, with Claude on the left and an empty shell on the right.
 
-1. Let herdr install its Claude Code hook. It writes `~/.claude/hooks/herdr-agent-state.sh` and the matching `SessionStart` entry in `settings.json`, so neither is shipped here:
+1. Install the dependencies (`curl` for the installer, `jq` and `zsh` for the wrapper):
+
+   ```bash
+   # Debian / Ubuntu
+   sudo apt update && sudo apt install -y curl jq zsh
+
+   # Fedora
+   sudo dnf install -y curl jq zsh
+
+   # Arch
+   sudo pacman -S --needed curl jq zsh
+   ```
+
+2. Install herdr with its official installer. There is no distro package: the script downloads the release binary, checks its SHA-256 and puts it in `~/.local/bin`, which must be in your `PATH`:
+
+   ```bash
+   curl -fsSL https://herdr.dev/install.sh | sh
+   herdr --version
+   ```
+
+   Homebrew (`brew install herdr`), mise and Nix are also supported, see the [install docs](https://herdr.dev/docs/install/).
+
+3. Let herdr install its Claude Code hook. It writes `~/.claude/hooks/herdr-agent-state.sh` and the matching `SessionStart` entry in `settings.json`, so neither is shipped here:
 
    ```bash
    herdr integration install claude
    ```
 
-2. Source the wrapper from `~/.zshrc`:
+4. Source the wrapper from `~/.zshrc`:
 
    ```bash
    echo "source $PWD/shell/claude-herdr.zsh" >> ~/.zshrc
