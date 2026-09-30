@@ -17,7 +17,7 @@ Contraintes non négociables :
 - **Une ligne par événement.** Une stack trace sur 30 lignes devient 30 événements chez le collecteur si elle n'est pas encapsulée dans un champ.
 - **Horodatage ISO 8601 en UTC, avec les millisecondes.** L'heure locale rend la corrélation multi-régions impossible.
 - **Le message est stable, le contexte est dans les champs.** Écrire `msg:"payment declined"` plus `order_id`, jamais `msg:"payment declined for order A-12094"` : sinon aucun regroupement par type d'erreur n'est possible.
-- **Un identifiant de corrélation** (`trace_id` ou `request_id`) propagé de bout en bout. C'est la seule chose qui permet de reconstituer un parcours entre services.
+- **Un identifiant de corrélation** propagé de bout en bout. C'est la seule chose qui permet de reconstituer un parcours entre services. Si un tracer est en place, `trace_id` et `span_id` sont **lus dans le contexte du span actif**, jamais générés à part : un identifiant maison à côté d'une trace ne permet pas de passer de l'une aux autres. Sans tracer, un `request_id` propagé fait l'affaire. Voir `tracing-setup`.
 
 ## Agrégation
 

@@ -33,7 +33,7 @@
 
 # SKILLS
 
-23 skills dans `~/.claude/skills/` (noms exacts injectés par le système au démarrage) :
+30 skills dans `~/.claude/skills/` (noms exacts injectés par le système au démarrage) :
 - 9 DevOps : infra, CI-CD, cloud, orchestration, monitoring. Sur ce type de taf, consulter le skill pertinent AVANT de proposer commandes ou configs, même sans mot-clé exact
 - 14 dev/méthodo (superpowers) : brainstorm, plan, TDD, debug, code review, git worktrees. Dès qu'il s'agit de DÉVELOPPER (feature, fix, refactor, tests) : suivre le workflow, brainstorm/plan puis TDD RED-GREEN-REFACTOR puis code review avant merge. Pas foncer dans le code direct
 

@@ -1,6 +1,6 @@
 ---
 name: logging-setup
-description: Mise en place et revue des logs d'infrastructure et d'application, format de présentation console imposé (==> / OK / WARN / FAIL), destination stdout/stderr, journal de run, niveaux, redaction des secrets, rotation et rétention. Couvre les spécificités Ansible, systemd et CI/CD, et renvoie à collecte.md pour les logs agrégés. Se déclenche avec "logs", "logging", "journalisation", "log_path", "no_log", "logrotate", "journald", "structured logging", "agrégation de logs", "rétention", "observabilité".
+description: Mise en place et revue des logs d'infrastructure et d'application, format de présentation console imposé (contrat Ansible : TASK, issues, PLAY RECAP), destination stdout/stderr, journal de run, niveaux, redaction des secrets, rotation et rétention. Couvre les spécificités Ansible, systemd et CI/CD, et renvoie à collecte.md pour les logs agrégés. Se déclenche avec "logs", "logging", "journalisation", "log_path", "no_log", "logrotate", "journald", "structured logging", "agrégation de logs", "rétention", "observabilité".
 ---
 
 # Mise en place des logs
@@ -11,56 +11,39 @@ Un agent compétent horodate déjà ses lignes, met un niveau devant, et n'écri
 
 Ce skill couvre les décisions qui se prennent au moment du branchement, celles qu'on ne peut plus corriger sans migration une fois que le collecteur ingère.
 
-## Présentation de la sortie : format imposé
+## Présentation de la sortie : contrat Ansible
 
-**Cette section n'est pas une suggestion. La sortie a toujours cette allure, sur tous les projets.** Le reste du skill donne des bonnes pratiques à adapter, celle-ci est un invariant : un opérateur qui a lu un log d'un projet sait lire ceux des autres.
+**Cette section n'est pas une suggestion.** La sortie console suit le contrat d'Ansible décrit dans `makefile-builder` (section « Contrat de sortie ») : un opérateur qui a lu un `ansible-playbook` sait lire tous les scripts. **REQUIRED BACKGROUND :** lire cette section de `makefile-builder`, y compris « Les mots viennent de l'outil, la forme vient d'Ansible ».
 
 ### Rendu attendu
 
 ```
-==> Step 1: API server IP allowlist
+TASK [aks : API server IP allowlist] *******************************************
     current allowlist: 10.0.0.0/8
-    requested         : 10.0.0.0/8,203.0.113.7/32
-  OK  allowlist applied, rules take up to 2 minutes to propagate
-  WARN 203.0.113.7 is not listed explicitly
-  FAIL could not reach the API server
+    requested        : 10.0.0.0/8,203.0.113.7/32
+[WARNING]: 203.0.113.7 is not listed explicitly
+changed:     [aks] allowlist applied, rules take up to 2 minutes to propagate
+
+PLAY RECAP *********************************************************************
+aks         : ok=4   changed=1   unreachable=0   failed=0   skipped=0
 ```
 
-Quatre marqueurs, jamais plus :
-
-| Marqueur | Rôle | Flux | Couleur |
-|---|---|---|---|
-| `==>` | Ouverture d'une étape, précédée d'une ligne vide | stdout | bleu gras |
-| (indentation seule) | Détail, contexte, valeur lue | stdout | aucune |
-| `OK` | L'étape a abouti ou était déjà dans l'état voulu | stdout | vert |
-| `WARN` | Anomalie absorbée, l'exécution continue | **stderr** | jaune |
-| `FAIL` | Échec, suivi d'une sortie non nulle | **stderr** | rouge |
+| Élément | Rôle | Flux |
+|---|---|---|
+| `TASK [role : action]` | Ouverture d'une étape, ligne d'étoiles jusqu'à 80 colonnes | stdout |
+| (indentation seule) | Détail, contexte, valeur lue | stdout |
+| Issue par ligne (`ok:`, `changed:`, ou le mot de l'outil) | Résultat de l'étape | stdout |
+| `[WARNING]:` | Anomalie absorbée, l'exécution continue | **stderr** |
+| `fatal:` / `unreachable:` | Échec, suivi d'une sortie non nulle | **stderr** |
+| `PLAY RECAP` | Compteurs de fin, nommés d'après l'outil | stdout |
 
 Règles de forme :
 
-- **L'indentation porte la hiérarchie.** Étape à la colonne 0, détails à 4 espaces, marqueurs à 2 espaces. Un log qui se scanne à la verticale.
-- **Pas de niveau supplémentaire.** Pas de `DEBUG` visible, pas de `NOTICE`, pas d'émoji. Ce qui ne rentre pas dans les quatre marqueurs n'a rien à faire dans la sortie.
-- **La couleur est un bonus, jamais l'information.** Le texte `WARN` doit rester lisible une fois les couleurs retirées.
+- **La couleur est un bonus, jamais l'information.** Le mot de l'issue reste lisible une fois les couleurs retirées.
 - **Couleurs désactivées** si la sortie n'est pas un terminal, ou si `NO_COLOR` est défini.
+- **Pas de niveau supplémentaire visible.** Pas de `DEBUG` à l'écran, pas d'émoji.
 
-### Implémentation de référence
-
-```bash
-if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
-    readonly C_RESET=$'\033[0m' C_RED=$'\033[31m' C_GREEN=$'\033[32m'
-    readonly C_YELLOW=$'\033[33m' C_BLUE=$'\033[34m' C_BOLD=$'\033[1m'
-else
-    readonly C_RESET='' C_RED='' C_GREEN='' C_YELLOW='' C_BLUE='' C_BOLD=''
-fi
-
-log_step() { printf '\n%s==> %s%s\n' "${C_BOLD}${C_BLUE}" "$*" "${C_RESET}"; }
-log_info() { printf '    %s\n' "$*"; }
-log_ok()   { printf '  %sOK%s  %s\n' "${C_GREEN}" "${C_RESET}" "$*"; }
-log_warn() { printf '  %sWARN%s %s\n' "${C_YELLOW}" "${C_RESET}" "$*" >&2; }
-log_err()  { printf '  %sFAIL%s %s\n' "${C_RED}" "${C_RESET}" "$*" >&2; }
-```
-
-Dans un autre langage, transposer les mêmes quatre marqueurs et la même indentation. Le rendu ne change pas, seul le véhicule change.
+Dans un autre langage, transposer la même forme. Le rendu ne change pas, seul le véhicule change.
 
 ## 1. Décider la destination avant le format
 
@@ -94,7 +77,7 @@ Le fichier reçoit les deux flux, mais **stdout et stderr restent séparés** à
 
 ## 2. Niveaux : la règle du destinataire
 
-Choisir le niveau selon qui doit réagir. Côté console, `FAIL` porte ERROR, `WARN` porte WARN, `==>` et l'indentation portent INFO.
+Choisir le niveau selon qui doit réagir. Côté console, `fatal:` et `unreachable:` portent ERROR, `[WARNING]:` porte WARN, `TASK`, les issues et l'indentation portent INFO.
 
 | Niveau | Destinataire | Test de validation |
 |---|---|---|
@@ -164,13 +147,13 @@ La doc officielle de référence est l'annexe [Logging Ansible output](https://d
 | `copytruncate` par défaut | Lignes perdues à chaque rotation | Signal de réouverture en `postrotate` |
 | DEBUG laissé actif en production | Volume, coût, secrets exposés | Niveau piloté par variable d'environnement |
 | Horodatage en heure locale | Corrélation impossible entre régions | ISO 8601 UTC avec millisecondes |
-| Marqueurs maison inventés à chaque projet | Chaque log se relit différemment | Les quatre marqueurs imposés, sans exception |
+| Marqueurs maison inventés à chaque projet | Chaque log se relit différemment | Le contrat Ansible de `makefile-builder`, sans exception |
 | Tronquer le fichier de log au démarrage | Perte de l'historique, y compris du run qui a échoué | Ouverture en append |
 | `trap ... EXIT` posé sans chaînage | Le nettoyage précédent est écrasé silencieusement | Chaîner sur le trap existant |
 
 ## Checklist de revue
 
-1. La sortie console respecte les quatre marqueurs et l'indentation imposés, couleurs désactivables.
+1. La sortie console respecte le contrat Ansible (TASK, issues nommées d'après l'outil, PLAY RECAP), couleurs désactivables.
 2. La destination est cohérente avec le contexte d'exécution, et le process ne possède pas de fichier qu'il ne devrait pas posséder.
 3. Si un collecteur ingère, le format est structuré, une ligne par événement, horodatage UTC.
 4. Les niveaux respectent la règle du destinataire, et sont pilotables sans redéploiement.
