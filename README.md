@@ -12,7 +12,7 @@ Global rules, 30 skills, hooks and memory scaffolding. Everything here is generi
 
 ## Quick install
 
-- Automatic: `bash install.sh` copies everything into `~/.claude/`, including the memory scaffolding under the right project key.
+- Automatic: `bash install.sh` copies everything into `~/.claude/`, including the memory scaffolding under the right project key. Add `--herdr` for the herdr workspace, see below.
 - Claude-guided: see `INSTALL.md` for a prompt to paste into Claude Code.
 - Manual: see "Install on a new machine" below.
 
@@ -65,41 +65,20 @@ The `autoMode` block of the source `settings.json` is excluded too: it pins loca
 
 With [herdr](https://herdr.dev) installed, typing `claude` opens a herdr workspace in the current directory, with Claude on the left and an empty shell on the right.
 
-1. Install the dependencies (`curl` for the installer, `jq` and `zsh` for the wrapper):
+```bash
+bash install.sh --herdr
+```
 
-   ```bash
-   # Debian / Ubuntu
-   sudo apt update && sudo apt install -y curl jq zsh
+On top of the regular install, this:
 
-   # Fedora
-   sudo dnf install -y curl jq zsh
+1. Checks for `curl`, `jq` and `zsh`. If one is missing, it prints the `apt`, `dnf` and `pacman` command to install it and stops before writing anything.
+2. Installs herdr if it is not there yet: with Homebrew when available, otherwise with the [official installer](https://herdr.dev/docs/install/), which checks the SHA-256 and puts the binary in `~/.local/bin` (that directory must be in your `PATH`).
+3. Copies the wrapper to `~/.claude/shell/claude-herdr.zsh` and sources it from `~/.zshrc`, once. Moving or deleting the clone afterwards does not break your shell.
+4. Runs `herdr integration install claude`, which writes `~/.claude/hooks/herdr-agent-state.sh` and its `SessionStart` entry in `settings.json`.
 
-   # Arch
-   sudo pacman -S --needed curl jq zsh
-   ```
+Step 4 also runs on every later `bash install.sh`, with or without the flag, as long as herdr is installed: the script overwrites `settings.json`, and this puts the herdr hook back.
 
-2. Install herdr with its official installer. There is no distro package: the script downloads the release binary, checks its SHA-256 and puts it in `~/.local/bin`, which must be in your `PATH`:
-
-   ```bash
-   curl -fsSL https://herdr.dev/install.sh | sh
-   herdr --version
-   ```
-
-   Homebrew (`brew install herdr`), mise and Nix are also supported, see the [install docs](https://herdr.dev/docs/install/).
-
-3. Let herdr install its Claude Code hook. It writes `~/.claude/hooks/herdr-agent-state.sh` and the matching `SessionStart` entry in `settings.json`, so neither is shipped here:
-
-   ```bash
-   herdr integration install claude
-   ```
-
-4. Source the wrapper from `~/.zshrc`:
-
-   ```bash
-   echo "source $PWD/shell/claude-herdr.zsh" >> ~/.zshrc
-   ```
-
-The wrapper falls back to the plain `claude` binary when herdr is missing, when already inside herdr, when stdin or stdout is not a terminal, and for non-interactive flags and subcommands (`-p`, `--version`, `mcp`, `config`, `doctor`...). It needs `jq`.
+The wrapper falls back to the plain `claude` binary when herdr or `jq` is missing, when already inside herdr, when stdin or stdout is not a terminal, and for non-interactive flags and subcommands (`-p`, `--bg`, `--version`, `mcp`, `agents`, `logs`, `doctor`...). To bypass it once, run `command claude`.
 
 ## Notes
 

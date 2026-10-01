@@ -14,9 +14,9 @@ _claude_herdr_layout() {
 }
 
 claude() {
-  if [[ $HERDR_ENV == 1 || ! -t 0 || ! -t 1 ]] || (( ! $+commands[herdr] )) \
-    || (( ${argv[(I)(-p|--print|-v|--version|-h|--help)]} )) \
-    || [[ $1 == (mcp|config|doctor|update|install|plugin|setup-token|auth|migrate-installer) ]]; then
+  if [[ $HERDR_ENV == 1 || ! -t 0 || ! -t 1 ]] || (( ! $+commands[herdr] || ! $+commands[jq] )) \
+    || (( ${argv[(I)(-p|--print|-v|--version|-h|--help|--bg|--output-format(|=*)|--input-format(|=*))]} )) \
+    || [[ $1 == (agents|attach|auth|auto-mode|config|doctor|gateway|import|install|kill|logs|mcp|migrate-installer|plugin|plugins|project|respawn|rm|setup-token|stop|ultrareview|update|upgrade) ]]; then
     command claude "$@"
     return
   fi
