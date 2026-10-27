@@ -25,7 +25,7 @@ Le stage final ne contient que le binaire ou le runtime.
 
 ```dockerfile
 # --- Build stage ---
-FROM node:20-alpine AS build
+FROM node:24-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
@@ -33,7 +33,7 @@ COPY . .
 RUN npm run build
 
 # --- Final stage ---
-FROM node:20-alpine AS final
+FROM node:24-alpine AS final
 WORKDIR /app
 
 # create a dedicated non-root user, never reuse an existing broad-privilege one
@@ -51,8 +51,9 @@ ENTRYPOINT ["node", "dist/main.js"]
 
 - Toujours une image officielle ou vérifiée (pas de repo perso obscur)
 - Préférer une variante `alpine`, `slim` ou distroless
-- Toujours pin la version exacte (`node:20.11.1-alpine`), jamais `latest`
-- Vérifier le digest si l'image est critique (`node:20-alpine@sha256:...`)
+- Toujours pin la version exacte (`node:24.x.y-alpine`, relevée sur Docker Hub), jamais `latest`
+- Choisir une version encore supportée : Node 20 est en fin de vie depuis le 30 avril 2026, Node 24 est la LTS active
+- Vérifier le digest si l'image est critique (`node:24-alpine@sha256:...`)
 
 ### Checklist utilisateur
 

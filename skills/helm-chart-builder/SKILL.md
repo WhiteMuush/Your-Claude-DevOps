@@ -206,13 +206,13 @@ helm create mychart
 helm lint mychart
 helm template myrelease mychart -f values-prod.yaml | kubectl apply --dry-run=client -f -
 
-# Déploiement
+# Déploiement, avec rollback auto si échec (--rollback-on-failure en Helm 4, --atomic en Helm 3)
 helm upgrade --install myrelease ./mychart \
   -f values-prod.yaml \
   --set image.tag=v3.2.0 \
   --namespace prod \
   --create-namespace \
-  --atomic \           # rollback auto si échec
+  --rollback-on-failure \
   --timeout 5m
 
 # Différences avant upgrade (plugin helm-diff requis)
@@ -249,7 +249,7 @@ helm install myrelease oci://myregistry.azurecr.io/charts/mychart --version 1.3.
 
 - **`image.tag: latest`**, non reproductible. Toujours passer `--set image.tag=$CI_SHA`.
 - **Secrets en clair dans values.yaml**, ne jamais committer des credentials ; utiliser ESO, Vault ou `--set secret.password=$VAR` depuis CI.
-- **`helm install` sans `--atomic`**, laisse une release en état `FAILED` ; préférer `--atomic` en CI/CD.
+- **`helm install` sans `--rollback-on-failure`**, laisse une release en état `FAILED` ; préférer `--rollback-on-failure` en CI/CD. Helm 4 a renommé `--atomic` en `--rollback-on-failure` et `--force` en `--force-replace` : les anciens noms marchent encore mais affichent un avertissement d'obsolescence.
 - **Omettre `checksum/config`**, le pod ne redémarre pas quand la ConfigMap change sans cette annotation.
 - **Oublier `helm dependency update`**, dossier `charts/` vide → install échoue silencieusement.
 - **Versioning mal séparé**, ne pas synchroniser `version` (chart) et `appVersion` (image) : les deux bougent indépendamment.
@@ -263,4 +263,4 @@ helm install myrelease oci://myregistry.azurecr.io/charts/mychart --version 1.3.
 - Coupler avec **`ct` (chart-testing)** pour le lint et les tests d'intégration automatisés.
 - Activer **`NetworkPolicy`** par défaut dans le chart pour limiter le blast radius.
 - Générer la **documentation** des values avec `helm-docs` (annotations `# -- description`).
-- Préférer **`--atomic --timeout`** en CD pour garantir un rollback automatique en cas d'échec de rollout.
+- Préférer **`--rollback-on-failure --timeout`** en CD pour garantir un rollback automatique en cas d'échec de rollout (`--atomic` sur un client Helm 3).
