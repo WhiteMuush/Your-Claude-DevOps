@@ -1,47 +1,47 @@
-# Logs ingérés par un collecteur
+# Logs ingested by a collector
 
-Complément du skill `logging-setup`. À lire quand les logs quittent la machine : service longue durée, conteneur, agrégation centralisée. Pour un script d'exploitation lancé à la main, le format console du SKILL.md suffit.
+Companion to the `logging-setup` skill. Read it when logs leave the machine: long-running service, container, centralized aggregation. For an operations script run by hand, the console format from SKILL.md is enough.
 
-## Une ligne, un événement, un objet JSON
+## One line, one event, one JSON object
 
-Cette section vise **ce qu'un collecteur ingère**, pas la sortie console : le format imposé plus haut reste celui que lit un humain. Un script d'exploitation lancé à la main s'arrête au format console. Un service dont les logs partent vers un collecteur émet du JSON, et garde un rendu humain en local derrière une variable (`LOG_FORMAT=pretty`).
+This section targets **what a collector ingests**, not the console output: the format imposed above remains the one a human reads. An operations script run by hand stops at the console format. A service whose logs go to a collector emits JSON, and keeps a human-readable rendering locally behind a variable (`LOG_FORMAT=pretty`).
 
-Le format texte lisible à l'œil coûte cher dès qu'il y a un collecteur : chaque évolution de message casse le parsing en amont.
+The eye-readable text format becomes expensive as soon as there is a collector: every change to a message breaks the parsing upstream.
 
 ```json
 {"ts":"2026-09-21T14:03:11.482Z","level":"error","msg":"payment declined","service":"checkout","env":"prod","trace_id":"3f9a2c","order_id":"A-12094","err":"card_expired"}
 ```
 
-Contraintes non négociables :
+Non-negotiable constraints:
 
-- **Une ligne par événement.** Une stack trace sur 30 lignes devient 30 événements chez le collecteur si elle n'est pas encapsulée dans un champ.
-- **Horodatage ISO 8601 en UTC, avec les millisecondes.** L'heure locale rend la corrélation multi-régions impossible.
-- **Le message est stable, le contexte est dans les champs.** Écrire `msg:"payment declined"` plus `order_id`, jamais `msg:"payment declined for order A-12094"` : sinon aucun regroupement par type d'erreur n'est possible.
-- **Un identifiant de corrélation** propagé de bout en bout. C'est la seule chose qui permet de reconstituer un parcours entre services. Si un tracer est en place, `trace_id` et `span_id` sont **lus dans le contexte du span actif**, jamais générés à part : un identifiant maison à côté d'une trace ne permet pas de passer de l'une aux autres. Sans tracer, un `request_id` propagé fait l'affaire. Voir `tracing-setup`.
+- **One line per event.** A 30-line stack trace becomes 30 events in the collector if it is not wrapped in a field.
+- **ISO 8601 timestamp in UTC, with milliseconds.** Local time makes multi-region correlation impossible.
+- **The message is stable, the context is in the fields.** Write `msg:"payment declined"` plus `order_id`, never `msg:"payment declined for order A-12094"`: otherwise no grouping by error type is possible.
+- **A correlation identifier** propagated end to end. It is the only thing that lets you rebuild a path across services. If a tracer is in place, `trace_id` and `span_id` are **read from the active span's context**, never generated separately: a home-made identifier next to a trace does not let you move from one to the other. Without a tracer, a propagated `request_id` does the job. See `tracing-setup`.
 
-## Agrégation
+## Aggregation
 
-- **Le log ne doit jamais bloquer l'application.** Écriture asynchrone, buffer borné, et perte de lignes assumée plutôt que requêtes en attente. Un collecteur indisponible ne fait pas tomber le service.
-- **L'agent collecteur tourne à côté**, il lit les fichiers du runtime ou le journal. L'application n'envoie pas elle-même vers le collecteur réseau.
-- **Budget de volume** : décider ce qu'on échantillonne. Les logs d'accès en succès sont les premiers candidats.
-- **Les logs ne remplacent pas les métriques.** Compter des événements avec des requêtes de logs coûte cher et répond lentement. Un compteur Prometheus répond en millisecondes (voir `prometheus-grafana-setup`).
+- **Logging must never block the application.** Asynchronous writes, a bounded buffer, and accepting lost lines rather than pending requests. An unavailable collector does not bring down the service.
+- **The collector agent runs alongside**, it reads the runtime's files or the journal. The application does not itself send to the network collector.
+- **Volume budget**: decide what gets sampled. Successful access logs are the first candidates.
+- **Logs do not replace metrics.** Counting events with log queries is expensive and slow to answer. A Prometheus counter answers in milliseconds (see `prometheus-grafana-setup`).
 
-## Conteneurs et Kubernetes
+## Containers and Kubernetes
 
-- Driver de logs configuré explicitement avec `max-size` et `max-file`, sinon disque saturé.
-- Pas de sidecar d'écriture de fichier si stdout suffit.
-- Les logs d'un pod supprimé disparaissent : l'agrégation n'est pas optionnelle en production.
+- Log driver configured explicitly with `max-size` and `max-file`, otherwise the disk fills up.
+- No file-writing sidecar if stdout is enough.
+- The logs of a deleted pod disappear: aggregation is not optional in production.
 
 
-Sans `max-size` et `max-file` sur le driver `json-file` de Docker, le disque de l'hôte se remplit jusqu'à saturation : la rotation ne se fait pas toute seule.
+Without `max-size` and `max-file` on Docker's `json-file` driver, the host disk fills up until it is full: rotation does not happen on its own.
 
-## Anti-patterns propres à la collecte
+## Collection-specific anti-patterns
 
-| Anti-pattern | Conséquence | Correction |
+| Anti-pattern | Consequence | Fix |
 |---|---|---|
-| Message dynamique avec les valeurs dedans | Impossible de regrouper par type d'erreur | Message stable plus champs structurés |
-| Log multi-lignes non encapsulé | Une stack trace devient N événements | Stack dans un champ, une ligne |
-| Écriture synchrone vers le collecteur | Le service tombe quand le collecteur tombe | Buffer borné, asynchrone, perte assumée |
-| Pas de `max-size` sur le driver Docker | Disque de l'hôte plein | `max-size` et `max-file` explicites |
-| Aucun identifiant de corrélation | Parcours non reconstituable entre services | `trace_id` propagé de bout en bout |
-| Compter des événements via requêtes de logs | Lent et cher | Métrique dédiée |
+| Dynamic message with the values inside | Impossible to group by error type | Stable message plus structured fields |
+| Unwrapped multi-line log | A stack trace becomes N events | Stack in a field, one line |
+| Synchronous writes to the collector | The service goes down when the collector goes down | Bounded buffer, asynchronous, accepted loss |
+| No `max-size` on the Docker driver | Host disk full | Explicit `max-size` and `max-file` |
+| No correlation identifier | Path across services cannot be rebuilt | `trace_id` propagated end to end |
+| Counting events via log queries | Slow and expensive | Dedicated metric |

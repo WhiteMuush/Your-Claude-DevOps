@@ -1,27 +1,27 @@
 ---
 name: docker-guide
-description: Bonnes pratiques Docker niveau entreprise et sécurité DevSecOps, Dockerfile, multi-stage build, hardening d'image, secrets, scan de vulnérabilités, signature d'image, docker-compose sécurisé. À utiliser dès qu'un Dockerfile ou docker-compose.yml est écrit ou modifié, ou pour du hardening de conteneur. Se déclenche avec "Docker", "Dockerfile", "docker build", "conteneur", "image Docker", "docker-compose", "hardening", "DevSecOps", "Trivy", "cosign", "SBOM", "scan de vulnérabilités".
+description: Use when a Dockerfile or docker-compose.yml is written or modified, or for container hardening. Covers enterprise-grade Docker best practices and DevSecOps security, Dockerfile, multi-stage build, image hardening, secrets, vulnerability scanning, image signing, secured docker-compose. Triggers on "Docker", "Dockerfile", "docker build", "container", "Docker image", "docker-compose", "hardening", "DevSecOps", "Trivy", "cosign", "SBOM", "vulnerability scan".
 ---
 
-# Docker Guide : bonnes pratiques entreprise et DevSecOps
+# Docker Guide: enterprise and DevSecOps best practices
 
-## Principe directeur
+## Guiding principle
 
-Un Dockerfile de prod n'est jamais un Dockerfile de tuto.
+A production Dockerfile is never a tutorial Dockerfile.
 
-Chaque ligne doit répondre à trois questions :
-1. Est-ce que ça réduit la surface d'attaque ?
-2. Est-ce que ça réduit la taille de l'image ?
-3. Est-ce que ça reste reproductible (build déterministe) ?
+Every line must answer three questions:
+1. Does it reduce the attack surface?
+2. Does it reduce the image size?
+3. Does it stay reproducible (deterministic build)?
 
 ---
 
-## 1. Dockerfile : structure de base durcie
+## 1. Dockerfile: hardened base structure
 
-### Multi-stage build obligatoire
+### Multi-stage build is mandatory
 
-Le stage de build contient les outils (compilateurs, SDK).
-Le stage final ne contient que le binaire ou le runtime.
+The build stage contains the tools (compilers, SDK).
+The final stage contains only the binary or the runtime.
 
 ```dockerfile
 # --- Build stage ---
@@ -47,23 +47,23 @@ EXPOSE 3000
 ENTRYPOINT ["node", "dist/main.js"]
 ```
 
-### Checklist image de base
+### Base image checklist
 
-- Toujours une image officielle ou vérifiée (pas de repo perso obscur)
-- Préférer une variante `alpine`, `slim` ou distroless
-- Toujours pin la version exacte (`node:24.x.y-alpine`, relevée sur Docker Hub), jamais `latest`
-- Choisir une version encore supportée : Node 20 est en fin de vie depuis le 30 avril 2026, Node 24 est la LTS active
-- Vérifier le digest si l'image est critique (`node:24-alpine@sha256:...`)
+- Always an official or verified image (no obscure personal repo)
+- Prefer an `alpine`, `slim` or distroless variant
+- Always pin the exact version (`node:24.x.y-alpine`, taken from Docker Hub), never `latest`
+- Pick a version that is still supported: Node 20 has been end of life since April 30, 2026, Node 24 is the active LTS
+- Check the digest if the image is critical (`node:24-alpine@sha256:...`)
 
-### Checklist utilisateur
+### User checklist
 
-- Jamais `root` en exécution finale
-- Créer un user dédié, pas `nobody` (trop générique, parfois restreint bizarrement)
-- `USER` doit apparaître après tous les `COPY`/`RUN` qui ont besoin de droits
+- Never `root` at final runtime
+- Create a dedicated user, not `nobody` (too generic, sometimes oddly restricted)
+- `USER` must appear after every `COPY`/`RUN` that needs privileges
 
-### .dockerignore obligatoire
+### .dockerignore is mandatory
 
-Toujours présent, sinon le contexte de build fuite des fichiers sensibles.
+Always present, otherwise the build context leaks sensitive files.
 
 ```
 .git
@@ -78,16 +78,16 @@ node_modules
 
 ---
 
-## 2. Secrets : ce qu'il ne faut jamais faire
+## 2. Secrets: what you must never do
 
-**Jamais** de secret dans :
-- `ENV` ou `ARG` (visible dans `docker history` et dans les layers)
-- Un `COPY` de fichier `.env` dans l'image finale
-- Un `RUN echo $SECRET > file` (reste dans le layer même si supprimé après)
+**Never** put a secret in:
+- `ENV` or `ARG` (visible in `docker history` and in the layers)
+- A `COPY` of a `.env` file into the final image
+- A `RUN echo $SECRET > file` (stays in the layer even if deleted afterwards)
 
-### La bonne méthode : BuildKit secret mount
+### The right method: BuildKit secret mount
 
-Le secret n'est monté que pendant l'exécution du `RUN`, jamais persisté dans un layer.
+The secret is mounted only while the `RUN` executes, never persisted in a layer.
 
 ```dockerfile
 # syntax=docker/dockerfile:1
@@ -99,65 +99,65 @@ RUN --mount=type=secret,id=npm_token \
 docker build --secret id=npm_token,src=./npm_token.txt -t app .
 ```
 
-### En production (runtime)
+### In production (runtime)
 
-- Kubernetes : `Secret` monté en volume, jamais en variable d'env en clair dans un manifest commité
-- Docker Swarm : `docker secret create`, jamais en `environment:` de compose
-- Toujours un gestionnaire externe si dispo (Vault, AWS Secrets Manager, etc.)
+- Kubernetes: `Secret` mounted as a volume, never as a plain-text env variable in a committed manifest
+- Docker Swarm: `docker secret create`, never in the compose `environment:`
+- Always an external manager if available (Vault, AWS Secrets Manager, etc.)
 
 ---
 
-## 3. Scan de vulnérabilités (obligatoire en CI)
+## 3. Vulnerability scanning (mandatory in CI)
 
-Aucune image ne part en registry sans scan.
+No image goes to a registry without a scan.
 
-### Trivy (référence open source, simple à intégrer)
+### Trivy (open source reference, easy to integrate)
 
 ```bash
-# scan filesystem (avant build)
+# filesystem scan (before build)
 trivy fs --severity HIGH,CRITICAL --exit-code 1 .
 
-# scan de l'image construite
+# scan of the built image
 trivy image --severity HIGH,CRITICAL --exit-code 1 monimage:1.0.0
 ```
 
-`--exit-code 1` fait échouer le pipeline si des CVE HIGH/CRITICAL sont trouvées.
+`--exit-code 1` makes the pipeline fail if HIGH/CRITICAL CVEs are found.
 
-### Intégration CI (exemple générique)
+### CI integration (generic example)
 
 ```yaml
 - name: Scan image
   run: trivy image --severity HIGH,CRITICAL --exit-code 1 --no-progress monimage:${{ github.sha }}
 ```
 
-Pour GitHub Actions ou GitLab CI en détail, consulter respectivement les skills **github-actions-expert** et **gitlab-ci-guide**.
+For GitHub Actions or GitLab CI in detail, see the **github-actions-expert** and **gitlab-ci-guide** skills respectively.
 
 ---
 
-## 4. SBOM et signature d'image
+## 4. SBOM and image signing
 
 ### SBOM (Software Bill of Materials)
 
-Liste tous les composants et dépendances de l'image. Exigé dans beaucoup de contextes entreprise et réglementaires.
+Lists all the components and dependencies of the image. Required in many enterprise and regulatory contexts.
 
 ```bash
 trivy image --format cyclonedx --output sbom.json monimage:1.0.0
 ```
 
-### Signature d'image (cosign)
+### Image signing (cosign)
 
-Garantit que l'image en registry est bien celle buildée par le pipeline, pas altérée.
+Guarantees that the image in the registry is really the one built by the pipeline, not tampered with.
 
 ```bash
 cosign sign --key cosign.key monimage:1.0.0
 cosign verify --key cosign.pub monimage:1.0.0
 ```
 
-En entreprise, la clé privée reste dans un secret manager CI, jamais en clair dans le repo.
+In an enterprise, the private key stays in a CI secret manager, never in plain text in the repo.
 
 ---
 
-## 5. docker-compose : durcissement
+## 5. docker-compose: hardening
 
 ```yaml
 services:
@@ -187,45 +187,45 @@ services:
       - "127.0.0.1:3000:3000"
 ```
 
-### Points clés
+### Key points
 
-- `read_only: true` : le filesystem du conteneur est en lecture seule, `tmpfs` pour les besoins d'écriture ponctuels
-- `cap_drop: ALL` puis ajout ciblé seulement des capabilities nécessaires
-- `no-new-privileges` : bloque l'escalade de privilèges via setuid
-- Jamais `privileged: true` sauf besoin documenté et validé (accès matériel direct)
-- Ports bindés en loopback (`127.0.0.1:`) sauf si exposition publique explicitement voulue
-- Limites CPU/mémoire toujours définies (évite qu'un conteneur compromis ou buggé épuise l'hôte)
-- `healthcheck` systématique pour permettre restart automatique et supervision
-
----
-
-## 6. Runtime security (niveau avancé)
-
-- **Seccomp** : profil par défaut de Docker suffit dans la majorité des cas, ne pas désactiver (`--security-opt seccomp=unconfined` = drapeau rouge)
-- **AppArmor/SELinux** : garder le profil par défaut actif, ne pas lancer en mode `unconfined`
-- **User namespaces** : `--userns-remap` pour isoler le root du conteneur du root de l'hôte
-- **Réseau** : pas de `network_mode: host` sauf nécessité réelle (perf réseau extrême), sinon ça annule l'isolation réseau
+- `read_only: true`: the container filesystem is read-only, `tmpfs` for occasional write needs
+- `cap_drop: ALL` then targeted addition of only the necessary capabilities
+- `no-new-privileges`: blocks privilege escalation through setuid
+- Never `privileged: true` except for a documented and approved need (direct hardware access)
+- Ports bound to loopback (`127.0.0.1:`) unless public exposure is explicitly wanted
+- CPU/memory limits always defined (prevents a compromised or buggy container from exhausting the host)
+- `healthcheck` every time, to allow automatic restart and monitoring
 
 ---
 
-## 7. Checklist finale avant merge
+## 6. Runtime security (advanced level)
 
-- [ ] Multi-stage build, pas d'outils de build dans l'image finale
-- [ ] Image de base pinnée à une version précise
-- [ ] `USER` non-root défini
-- [ ] `.dockerignore` présent et à jour
-- [ ] Aucun secret en `ENV`/`ARG`/layer
-- [ ] Scan Trivy passé sans CVE HIGH/CRITICAL non justifiée
-- [ ] `HEALTHCHECK` défini
-- [ ] Limites CPU/mémoire définies
-- [ ] Ports non exposés publiquement sans raison explicite
-- [ ] `cap_drop: ALL` en compose, capabilities ajoutées une par une si besoin
+- **Seccomp**: Docker's default profile is enough in most cases, do not disable it (`--security-opt seccomp=unconfined` = red flag)
+- **AppArmor/SELinux**: keep the default profile active, do not run in `unconfined` mode
+- **User namespaces**: `--userns-remap` to isolate the container root from the host root
+- **Network**: no `network_mode: host` unless truly needed (extreme network performance), otherwise it cancels network isolation
 
 ---
 
-## Skills complémentaires
+## 7. Final checklist before merge
 
-- **docker-swarm-guide** : orchestration multi-nœuds, stacks, secrets Swarm
-- **helm-chart-builder** : si la cible finale est Kubernetes
-- **github-actions-expert** / **gitlab-ci-guide** : intégration du scan et de la signature en pipeline
-- **security-review** : revue de sécurité globale d'une branche, pas spécifique Docker
+- [ ] Multi-stage build, no build tools in the final image
+- [ ] Base image pinned to a specific version
+- [ ] Non-root `USER` defined
+- [ ] `.dockerignore` present and up to date
+- [ ] No secret in `ENV`/`ARG`/layer
+- [ ] Trivy scan passed with no unjustified HIGH/CRITICAL CVE
+- [ ] `HEALTHCHECK` defined
+- [ ] CPU/memory limits defined
+- [ ] Ports not publicly exposed without an explicit reason
+- [ ] `cap_drop: ALL` in compose, capabilities added one by one if needed
+
+---
+
+## Related skills
+
+- **docker-swarm-guide**: multi-node orchestration, stacks, Swarm secrets
+- **helm-chart-builder**: if the final target is Kubernetes
+- **github-actions-expert** / **gitlab-ci-guide**: integrating scanning and signing into the pipeline
+- **security-review**: overall security review of a branch, not Docker-specific

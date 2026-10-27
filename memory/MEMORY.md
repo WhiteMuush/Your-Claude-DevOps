@@ -1,13 +1,13 @@
 # Memory Index
 
-> Index de la mémoire persistante, chargé à chaque session.
-> Une ligne par mémoire : `- [Titre](fichier.md) : accroche courte`.
-> Le contenu des mémoires va dans les fichiers, jamais ici.
+> Index of the persistent memory, loaded at every session.
+> One line per memory: `- [Title](file.md) : short hook`.
+> The content of the memories goes in the files, never here.
 >
-> Types de mémoire (frontmatter `metadata.type`) :
-> - `user` : qui est l'utilisateur (rôle, préférences)
-> - `feedback` : consignes sur ta façon de travailler (avec le pourquoi)
-> - `project` : travail en cours, objectifs, contraintes
-> - `reference` : pointeurs externes (URLs, tickets, dashboards)
+> Memory types (frontmatter `metadata.type`):
+> - `user`: who the user is (role, preferences)
+> - `feedback`: instructions on how you should work (with the why)
+> - `project`: ongoing work, goals, constraints
+> - `reference`: external pointers (URLs, tickets, dashboards)
 >
-> Cet index est vide au départ. Claude le remplit au fil des sessions.
+> This index starts out empty. Claude fills it in over the sessions.

@@ -1,39 +1,39 @@
-# Installation guidée par Claude
+# Installation guided by Claude
 
-Sur la nouvelle machine :
+On the new machine:
 
-1. Cloner ce repo et ouvrir un terminal dedans :
+1. Clone this repo and open a terminal in it:
 
    ```bash
    git clone https://github.com/WhiteMuush/Your-Claude-DevOps.git
    cd Your-Claude-DevOps
    ```
 
-2. Lancer Claude Code dans ce dossier.
+2. Start Claude Code in this folder.
 
-3. Coller ce prompt :
+3. Paste this prompt:
 
 ---
 
-> Tu es dans mon repo de config Claude Code (`Your-Claude-DevOps`). Installe cette config sur la machine actuelle.
+> You are in my Claude Code config repo (`Your-Claude-DevOps`). Install this config on the current machine.
 >
-> Étapes :
-> 1. Lis le `README.md` et le script `install.sh` pour comprendre ce qui doit être copié dans `~/.claude/`.
-> 2. Le script écrit dans `~/.claude/`, donc le gate de sécurité t'empêchera de le lancer toi-même. Ne force pas : donne-moi la commande exacte à exécuter moi-même, préfixée par `!`, soit `! bash install.sh`.
-> 3. Une fois que je l'ai lancée, vérifie que l'install est bonne : `~/.claude/CLAUDE.md` présent, `~/.claude/skills` contient 30 dossiers, et la mémoire est dans `~/.claude/projects/<clé>/memory`.
-> 4. Dis-moi si le plugin `i-have-adhd` est actif. S'il ne l'est pas, rappelle-moi les commandes `/plugin marketplace add ayghri/i-have-adhd` puis `/plugin install i-have-adhd`.
-> 5. Demande-moi si je veux le workspace herdr (`claude` ouvre Claude à gauche et un shell à droite). Si oui, la commande devient `! bash install.sh --herdr`, et vérifie ensuite que `~/.claude/shell/claude-herdr.zsh` existe et que `~/.zshrc` le source une seule fois.
-> 6. Confirme quand tout est en place et dis-moi de relancer Claude Code pour charger le plugin.
+> Steps:
+> 1. Read the `README.md` and the `install.sh` script to understand what needs to be copied into `~/.claude/`.
+> 2. The script writes to `~/.claude/`, so the safety gate will stop you from running it yourself. Do not force it: give me the exact command to run myself, prefixed with `!`, that is `! bash install.sh`.
+> 3. Once I have run it, check that the install is correct: `~/.claude/CLAUDE.md` is present, `~/.claude/skills` contains 30 folders, and the memory is in `~/.claude/projects/<key>/memory`.
+> 4. Tell me whether the `i-have-adhd` plugin is active. If it is not, remind me of the commands `/plugin marketplace add ayghri/i-have-adhd` then `/plugin install i-have-adhd`.
+> 5. Ask me whether I want the herdr workspace (`claude` opens Claude on the left and a shell on the right). If so, the command becomes `! bash install.sh --herdr`, and then check that `~/.claude/shell/claude-herdr.zsh` exists and that `~/.zshrc` sources it only once.
+> 6. Confirm when everything is in place and tell me to restart Claude Code to load the plugin.
 
 ---
 
-## Alternative sans Claude
+## Alternative without Claude
 
-Tu peux tout faire toi-même, sans prompt :
+You can do everything yourself, without a prompt:
 
 ```bash
-bash install.sh          # config seule
-bash install.sh --herdr  # config + workspace herdr
+bash install.sh          # config only
+bash install.sh --herdr  # config + herdr workspace
 ```
 
-Puis relancer Claude Code.
+Then restart Claude Code.

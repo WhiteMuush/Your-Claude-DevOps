@@ -1,14 +1,14 @@
 ---
 name: example-user-profile
-description: Exemple de mémoire, montre le format. À supprimer ou remplacer.
+description: Example memory, shows the format. Delete or replace it.
 metadata:
   type: user
 ---
 
-Fichier d'exemple. Une mémoire = un fait, une intention.
+Example file. One memory = one fact, one intent.
 
-Format : frontmatter (name, description, metadata.type) puis le fait en clair.
-Pour `feedback` et `project`, ajouter des lignes **Pourquoi :** et **Comment appliquer :**.
-Lier une autre mémoire avec [[son-name]].
+Format: frontmatter (name, description, metadata.type) then the fact in plain words.
+For `feedback` and `project`, add **Why:** and **How to apply:** lines.
+Link another memory with [[its-name]].
 
-Supprime ce fichier quand tu commences à remplir ta vraie mémoire.
+Delete this file when you start filling in your real memory.

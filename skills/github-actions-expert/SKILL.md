@@ -1,23 +1,23 @@
 ---
 name: github-actions-expert
-description: Maîtrise de GitHub Actions, workflows CI/CD, actions custom, matrix builds, secrets, environments et reusable workflows. Se déclenche avec "GitHub Actions", "workflow GitHub", "actions", "CI/CD GitHub", ".github/workflows".
+description: Use when working with GitHub Actions, CI/CD workflows, custom actions, matrix builds, secrets, environments and reusable workflows. Triggers on "GitHub Actions", "GitHub workflow", "actions", "GitHub CI/CD", ".github/workflows".
 ---
 
 # GitHub Actions Expert
 
 ## Workflow
 
-1. **Analyser le pipeline requis**, Identifier les étapes (build, test, lint, SAST, déploiement), les triggers adaptés et les branches concernées.
+1. **Analyze the required pipeline**, Identify the steps (build, test, lint, SAST, deployment), the suitable triggers and the branches involved.
 
-   | Trigger | Quand l'utiliser |
+   | Trigger | When to use it |
    |---------|-----------------|
-   | `push` sur `main` | CI post-merge, déploiement continu |
-   | `pull_request` | Validation avant merge, checks obligatoires |
-   | `schedule` | Jobs de maintenance, audit de sécurité nocturne |
-   | `workflow_dispatch` | Déploiement manuel avec paramètres |
-   | `release` (published) | Publication de packages, binaires |
+   | `push` on `main` | Post-merge CI, continuous deployment |
+   | `pull_request` | Validation before merge, required checks |
+   | `schedule` | Maintenance jobs, nightly security audit |
+   | `workflow_dispatch` | Manual deployment with parameters |
+   | `release` (published) | Publishing packages, binaries |
 
-2. **Structurer le YAML**, Organiser les jobs avec dépendances explicites et conditions.
+2. **Structure the YAML**, Organize the jobs with explicit dependencies and conditions.
 
    ```yaml
    name: CI
@@ -26,7 +26,7 @@ description: Maîtrise de GitHub Actions, workflows CI/CD, actions custom, matri
        branches: [main]
      pull_request:
        branches: [main]
-   permissions:           # Principe du moindre privilège global
+   permissions:           # Global least-privilege principle
      contents: read
    jobs:
      build:
@@ -49,18 +49,18 @@ description: Maîtrise de GitHub Actions, workflows CI/CD, actions custom, matri
          - run: npm ci && npm test
    ```
 
-3. **Configurer les matrix builds**, Tester plusieurs environnements sans duplication.
+3. **Configure the matrix builds**, Test several environments without duplication.
 
    ```yaml
    strategy:
-     fail-fast: false        # Ne pas annuler les autres axes si un échoue
+     fail-fast: false        # Do not cancel the other axes if one fails
      matrix:
        node: ['22', '24']
        os: [ubuntu-latest, windows-latest]
        include:
          - node: '24'
            os: ubuntu-latest
-           coverage: true     # Variable custom pour un axe précis
+           coverage: true     # Custom variable for one specific axis
        exclude:
          - node: '22'
            os: windows-latest
@@ -70,19 +70,19 @@ description: Maîtrise de GitHub Actions, workflows CI/CD, actions custom, matri
        run: npm run test:coverage
    ```
 
-4. **Gérer les secrets et variables**, Hiérarchie : Organization > Repository > Environment.
+4. **Manage secrets and variables**, Hierarchy: Organization > Repository > Environment.
 
    ```yaml
    env:
-     DATABASE_URL: ${{ vars.DATABASE_URL }}      # Variable non-sensible
+     DATABASE_URL: ${{ vars.DATABASE_URL }}      # Non-sensitive variable
    steps:
      - name: Deploy
        env:
-         API_KEY: ${{ secrets.PROD_API_KEY }}    # Secret injecté en env, jamais en arg CLI
+         API_KEY: ${{ secrets.PROD_API_KEY }}    # Secret injected as env, never as a CLI arg
        run: ./deploy.sh
    ```
 
-   **OIDC (recommandé sur AWS/Azure/GCP)**, supprime les secrets statiques cloud :
+   **OIDC (recommended on AWS/Azure/GCP)**, removes static cloud secrets:
    ```yaml
    permissions:
      id-token: write
@@ -94,14 +94,14 @@ description: Maîtrise de GitHub Actions, workflows CI/CD, actions custom, matri
          aws-region: eu-west-1
    ```
 
-5. **Cacher les dépendances**, Impact direct sur la durée du pipeline.
+5. **Cache the dependencies**, Direct impact on pipeline duration.
 
    ```yaml
    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
      with:
        node-version: '22'
-       cache: 'npm'           # Gère le cache automatiquement (préférer cette option)
-   # Ou cache manuel pour des cas custom :
+       cache: 'npm'           # Handles the cache automatically (prefer this option)
+   # Or manual cache for custom cases:
    - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4
      with:
        path: ~/.m2/repository
@@ -110,7 +110,7 @@ description: Maîtrise de GitHub Actions, workflows CI/CD, actions custom, matri
          ${{ runner.os }}-maven-
    ```
 
-6. **Créer des reusable workflows**, Extraire les patterns communs dès qu'ils se répètent.
+6. **Create reusable workflows**, Extract common patterns as soon as they repeat.
 
    ```yaml
    # .github/workflows/reusable-deploy.yml
@@ -131,7 +131,7 @@ description: Maîtrise de GitHub Actions, workflows CI/CD, actions custom, matri
          - run: echo "Deploying to ${{ inputs.environment }}"
    ```
 
-   Appel depuis un autre workflow :
+   Call from another workflow:
    ```yaml
    jobs:
      deploy-prod:
@@ -142,26 +142,26 @@ description: Maîtrise de GitHub Actions, workflows CI/CD, actions custom, matri
          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
    ```
 
-7. **Sécuriser le pipeline**, Checklist obligatoire.
+7. **Secure the pipeline**, Mandatory checklist.
 
    ```yaml
-   # Épingler sur SHA (jamais sur tag mutable)
+   # Pin to a SHA (never to a mutable tag)
    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-   # Attester la provenance du build
+   # Attest the build provenance
    permissions:
      id-token: write
      attestations: write
    steps:
-     - uses: actions/attest-build-provenance@<sha>   # cf. encadré ci-dessous
+     - uses: actions/attest-build-provenance@<sha>   # see the box below
        with:
          subject-path: dist/app.tar.gz
    ```
 
-8. **Optimiser les temps d'exécution**, Techniques d'accélération.
+8. **Optimize execution times**, Speed-up techniques.
 
    ```yaml
-   # Skip jobs si les fichiers concernés n'ont pas changé
+   # Skip jobs if the relevant files have not changed
    - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36  # v3
      id: changes
      with:
@@ -171,44 +171,44 @@ description: Maîtrise de GitHub Actions, workflows CI/CD, actions custom, matri
    - if: steps.changes.outputs.backend == 'true'
      run: npm run test:backend
 
-   # Partager des artifacts entre jobs
-   - uses: actions/upload-artifact@<sha>   # cf. encadré ci-dessous
+   # Share artifacts between jobs
+   - uses: actions/upload-artifact@<sha>   # see the box below
      with:
        name: dist
        path: dist/
        retention-days: 1
    ```
 
-> **Obtenir le SHA d'un tag**, la règle d'épinglage vaut pour *toutes* les actions, y compris celles
-> de GitHub lui-même. Pour résoudre un tag en SHA :
+> **Getting the SHA of a tag**, the pinning rule applies to *all* actions, including those
+> from GitHub itself. To resolve a tag into a SHA:
 > ```bash
 > gh api repos/actions/upload-artifact/git/ref/tags/v4 --jq .object.sha
 > ```
-> Les SHA cités plus haut correspondent à `checkout` v4.2.2 et `setup-node` v4.4.0 : les revérifier
-> avant réutilisation, ces actions ont publié des majeures depuis.
+> The SHAs quoted above match `checkout` v4.2.2 and `setup-node` v4.4.0: check them again
+> before reuse, these actions have published major versions since.
 
-## Anti-patterns et pièges
+## Anti-patterns and pitfalls
 
-| Anti-pattern | Risque | Correction |
+| Anti-pattern | Risk | Fix |
 |---|---|---|
-| `uses: actions/checkout@v4` (tag mutable) | Supply chain attack | Épingler sur le SHA du commit |
-| `permissions: write-all` global | Élévation de privilèges | Déclarer seulement les permissions nécessaires par job |
-| Secrets affichés dans les `run` | Fuite dans les logs | Injecter via `env:` jamais via `${{ secrets.X }}` dans les commandes shell |
-| `continue-on-error: true` sans logging | Masquer des défaillances silencieuses | Utiliser avec un step de reporting explicite |
-| Pas de `timeout-minutes` | Job bloqué indéfiniment = facture | Toujours fixer un timeout (par défaut GitHub : 6h) |
-| Stocker des credentials dans les variables (vars) | Exposition accidentelle | Vars = config publique, secrets = credentials |
-| Concurrence non gérée sur déploiements | Double déploiement | Utiliser `concurrency` avec `cancel-in-progress: true` |
+| `uses: actions/checkout@v4` (mutable tag) | Supply chain attack | Pin to the commit SHA |
+| Global `permissions: write-all` | Privilege escalation | Declare only the permissions needed per job |
+| Secrets displayed in `run` | Leak in the logs | Inject through `env:`, never through `${{ secrets.X }}` in shell commands |
+| `continue-on-error: true` without logging | Hiding silent failures | Use with an explicit reporting step |
+| No `timeout-minutes` | Job stuck forever = bill | Always set a timeout (GitHub default: 6h) |
+| Storing credentials in variables (vars) | Accidental exposure | Vars = public config, secrets = credentials |
+| Unmanaged concurrency on deployments | Double deployment | Use `concurrency` with `cancel-in-progress: true` |
 
 ```yaml
-# Gestion de la concurrence pour les déploiements
+# Concurrency management for deployments
 concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: true
 ```
 
-## Bonnes pratiques 2026
+## 2026 best practices
 
-- **Dependabot pour les actions**, Ajouter `.github/dependabot.yml` pour maintenir les SHA à jour automatiquement :
+- **Dependabot for actions**, Add `.github/dependabot.yml` to keep the SHAs up to date automatically:
   ```yaml
   updates:
     - package-ecosystem: "github-actions"
@@ -216,7 +216,7 @@ concurrency:
       schedule:
         interval: "weekly"
   ```
-- **Required status checks**, Protéger `main` : activer les branch protection rules avec au moins un check CI obligatoire et `Require branches to be up to date`.
-- **Environments de déploiement**, Toujours utiliser un Environment GitHub (`Settings > Environments`) avec reviewers pour la production ; les secrets d'environnement écrasent les secrets repo.
-- **Self-hosted runners**, Isoler dans des VMs éphémères (ou containers) ; ne jamais utiliser sur des repos publics sans `if: github.event.pull_request.head.repo.full_name == github.repository` pour bloquer les forks.
-- **Audit des logs**, Activer `ACTIONS_STEP_DEBUG` et `ACTIONS_RUNNER_DEBUG` en secrets (valeur `true`) pour le debugging ; les désactiver en production.
+- **Required status checks**, Protect `main`: enable branch protection rules with at least one required CI check and `Require branches to be up to date`.
+- **Deployment environments**, Always use a GitHub Environment (`Settings > Environments`) with reviewers for production; environment secrets override repo secrets.
+- **Self-hosted runners**, Isolate them in ephemeral VMs (or containers); never use them on public repos without `if: github.event.pull_request.head.repo.full_name == github.repository` to block forks.
+- **Log auditing**, Enable `ACTIONS_STEP_DEBUG` and `ACTIONS_RUNNER_DEBUG` as secrets (value `true`) for debugging; disable them in production.

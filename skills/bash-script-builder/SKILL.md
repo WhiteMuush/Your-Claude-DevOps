@@ -1,166 +1,166 @@
 ---
 name: bash-script-builder
-description: Scripts shell d'infrastructure et d'automatisation DevOps, découpage obligatoire en fonctions et en fichiers, contrat stdout/stderr, idempotence, garde-fous sur les opérations qui coupent l'accès, fichiers de log et codes de sortie. Se déclenche avec "script bash", "script shell", ".sh", "Makefile", "automatiser", "script de déploiement", "script d'admin", "shellcheck".
+description: Use when writing infrastructure and DevOps automation shell scripts, with mandatory splitting into functions and files, stdout/stderr contract, idempotence, guardrails on operations that cut off access, log files and exit codes. Triggers on "bash script", "shell script", ".sh", "Makefile", "automate", "deployment script", "admin script", "shellcheck".
 ---
 
-# Scripts bash DevOps
+# DevOps bash scripts
 
-## Ce que ce skill n'enseigne pas
+## What this skill does not teach
 
-Un agent compétent écrit déjà spontanément `set -euo pipefail`, un trap ERR, des codes de sortie distincts, la validation des entrées, l'idempotence par lecture de l'état courant, `--dry-run`, `usage()` et des logs horodatés. Ne pas perdre de lignes là-dessus.
+A competent agent already writes `set -euo pipefail`, an ERR trap, distinct exit codes, input validation, idempotence by reading the current state, `--dry-run`, `usage()` and timestamped logs on its own. Do not waste lines on that.
 
-Ce skill couvre les angles morts observés, ceux qui passent la relecture et cassent en production.
+This skill covers the observed blind spots, the ones that pass review and break in production.
 
-## Structure : tout en fonctions, puis en fichiers
+## Structure: everything in functions, then in files
 
-**Règle non négociable : aucun code métier au niveau du fichier.** Chaque étape est une fonction nommée par ce qu'elle garantit (`ensure_role`, `check_token`), et le script se termine par `main "$@"`.
+**Non-negotiable rule: no business code at file level.** Each step is a function named after what it guarantees (`ensure_role`, `check_token`), and the script ends with `main "$@"`.
 
-Au niveau du fichier, il ne reste que :
+At file level, only these remain:
 
-1. le shebang et `set -euo pipefail` ;
-2. le `source` des bibliothèques ;
-3. la validation des variables d'entrée et les `readonly` ;
-4. les définitions de fonctions ;
-5. l'appel `main "$@"`.
+1. the shebang and `set -euo pipefail`;
+2. the `source` of the libraries;
+3. the validation of input variables and the `readonly` declarations;
+4. the function definitions;
+5. the `main "$@"` call.
 
-`main` se lit comme un sommaire : une suite d'appels de fonctions, sans logique.
+`main` reads like a table of contents: a series of function calls, with no logic.
 
-**Réutiliser avant d'écrire.** Avant de coder un helper (log, rapport, recap, lecture d'un token), chercher la bibliothèque déjà présente dans le dépôt (`lib.sh`, `scripts/*/lib.sh`) et la sourcer. Ne jamais redéfinir un helper qui existe déjà.
+**Reuse before writing.** Before coding a helper (log, report, recap, reading a token), look for the library already present in the repository (`lib.sh`, `scripts/*/lib.sh`) and source it. Never redefine a helper that already exists.
 
-**Découper en fichiers** dès que l'un de ces cas se présente :
+**Split into files** as soon as one of these cases comes up:
 
-| Cas | Découpage |
+| Case | Split |
 |---|---|
-| Le script dépasse environ 150 lignes | Un fichier par groupe de fonctions, sourcé par le script principal |
-| Il couvre des fonctionnalités distinctes (identité, réseau, CI...) | Un script par fonctionnalité, chacun avec son `main` |
-| Plusieurs scripts ont besoin du même helper | Le helper va dans la bibliothèque partagée |
+| The script goes beyond about 150 lines | One file per group of functions, sourced by the main script |
+| It covers distinct features (identity, network, CI...) | One script per feature, each with its own `main` |
+| Several scripts need the same helper | The helper goes into the shared library |
 
-Chaque fichier sourcé reçoit son `# shellcheck source=chemin` au-dessus du `source`. Si un Makefile existe, chaque script de fonctionnalité a sa propre cible.
+Each sourced file gets its `# shellcheck source=path` above the `source`. If a Makefile exists, each feature script has its own target.
 
-**Piège propre aux fonctions : le sous-shell.** Une fonction appelée via `$(...)` tourne dans un sous-shell. Les compteurs et les variables globales qu'elle modifie sont perdus au retour. Une fonction qui met à jour un état (recap, compteurs) s'appelle directement et écrit dans une variable globale ; elle n'est jamais capturée.
+**Pitfall specific to functions: the subshell.** A function called through `$(...)` runs in a subshell. The counters and global variables it modifies are lost on return. A function that updates state (recap, counters) is called directly and writes to a global variable; it is never captured.
 
-## Le contrat stdout / stderr
+## The stdout / stderr contract
 
-**stdout porte les données, stderr porte les diagnostics.** Ce n'est pas une préférence de style, c'est ce qui rend un script composable.
+**stdout carries the data, stderr carries the diagnostics.** This is not a style preference, it is what makes a script composable.
 
-Le piège concret : une fonction qui renvoie une valeur par capture, et qui logue au même endroit.
+The concrete pitfall: a function that returns a value through capture, and that logs to the same place.
 
 ```bash
-# CASSÉ : la variable récupère les logs collés à la valeur
+# BROKEN: the variable gets the logs stuck to the value
 ensure_group() {
     local id; id=$(lookup "$1")
-    log_ok "groupe '$1' trouvé"      # part sur stdout
+    log_ok "group '$1' found"        # goes to stdout
     printf '%s' "${id}"
 }
-group_id=$(ensure_group admins)       # contient le log ET l'id
+group_id=$(ensure_group admins)       # contains the log AND the id
 
-# CORRECT : tout ce qui n'est pas la valeur de retour part sur stderr
+# CORRECT: everything that is not the return value goes to stderr
 ensure_group() {
     local id; id=$(lookup "$1")
-    log_ok "groupe '$1' trouvé" >&2
+    log_ok "group '$1' found" >&2
     printf '%s' "${id}"
 }
 ```
 
-Règle simple : **dans une fonction dont la sortie est capturée, stdout est réservé à la valeur de retour.** Un commentaire au-dessus de la fonction le rappelle au relecteur.
+Simple rule: **in a function whose output is captured, stdout is reserved for the return value.** A comment above the function reminds the reviewer of this.
 
-Corollaire : les niveaux WARN et ERROR vont toujours sur stderr, y compris quand le script n'a pas de valeur de retour.
+Corollary: the WARN and ERROR levels always go to stderr, including when the script has no return value.
 
-## Garde-fous : prouver le nouveau chemin avant de couper l'ancien
+## Guardrails: prove the new path before cutting the old one
 
-L'erreur la plus coûteuse d'un script de durcissement n'est pas un bug de syntaxe, c'est de **supprimer le dernier accès dont on dispose**.
+The most costly mistake in a hardening script is not a syntax bug, it is **removing the last access you have**.
 
-Deux familles d'opérations demandent un garde-fou explicite :
+Two families of operations require an explicit guardrail:
 
-**Les filtres réseau.** Avant d'appliquer une allowlist, vérifier que l'adresse de sortie courante y est couverte. Sinon, avertir et exiger une confirmation.
+**Network filters.** Before applying an allowlist, check that the current outbound address is covered by it. Otherwise, warn and require a confirmation.
 
 ```bash
 my_ip=$(curl -fsS --max-time 10 https://api.ipify.org || true)
 if [[ -n "${my_ip}" && ",${ALLOWED_CIDR}," != *",${my_ip}/32,"* ]]; then
-    log_warn "${my_ip} n'est pas dans la liste, vous allez perdre l'accès"
-    confirm "appliquer quand même ?" || die "abandon"
+    log_warn "${my_ip} is not in the list, you will lose access"
+    confirm "apply anyway?" || die "aborted"
 fi
 ```
 
-**Le retrait d'un moyen d'authentification.** Ne jamais désactiver l'ancien avant d'avoir vérifié que le nouveau est **opérationnel**, pas seulement créé. Un groupe d'identité vide, ou créé mais non rattaché à la ressource, n'est pas un chemin d'accès.
+**Removing an authentication method.** Never disable the old one before checking that the new one is **operational**, not just created. An empty identity group, or one that is created but not attached to the resource, is not an access path.
 
 ```bash
 members=$(count_members "${ADMIN_GROUP}")
-[[ "${members}" -gt 0 ]] || die "groupe admin vide, refus de désactiver les comptes locaux"
+[[ "${members}" -gt 0 ]] || die "admin group is empty, refusing to disable local accounts"
 ```
 
-Ordonner les étapes en conséquence : **établir et tester le nouvel accès, puis retirer l'ancien.** Jamais l'inverse.
+Order the steps accordingly: **establish and test the new access, then remove the old one.** Never the other way around.
 
-## Idempotence : elle se prouve, elle ne se suppose pas
+## Idempotence: it is proven, not assumed
 
-Lire l'état courant avant d'écrire ne suffit pas. Le défaut classique est un `if` qui constate puis agit quand même :
+Reading the current state before writing is not enough. The classic flaw is an `if` that observes and then acts anyway:
 
 ```bash
-# CASSÉ : log puis exécution inconditionnelle
+# BROKEN: log then unconditional execution
 if [[ "$(current_state)" == "enabled" ]]; then
-    log_ok "déjà activé"
+    log_ok "already enabled"
 fi
-run enable-the-thing        # l'API refuse : déjà activé
+run enable-the-thing        # the API refuses: already enabled
 
 # CORRECT
 if [[ "$(current_state)" == "enabled" ]]; then
-    log_ok "déjà activé"
+    log_ok "already enabled"
 else
     run enable-the-thing
 fi
 ```
 
-**La vérification, c'est de lancer le script deux fois de suite.** La seconde exécution doit se terminer sans erreur et sans rien changer. Tant que ça n'a pas été fait, l'idempotence est une intention, pas une propriété.
+**The check is to run the script twice in a row.** The second run must finish without error and without changing anything. Until that has been done, idempotence is an intention, not a property.
 
-Attention aussi aux API qui refusent un drapeau d'activation sur une ressource déjà activée : le drapeau ne se passe qu'à la première fois, la mise à jour ultérieure porte sur les attributs seuls.
+Also watch out for APIs that refuse an enable flag on a resource that is already enabled: the flag is only passed the first time, later updates only touch the attributes.
 
-## Fichier de log
+## Log file
 
-Un `--log-file` mal fait détruit l'information qu'il prétend conserver.
+A badly done `--log-file` destroys the information it claims to keep.
 
-| Règle | Pourquoi |
+| Rule | Why |
 |---|---|
-| Ouvrir en **append**, jamais en troncature | `: > "$LOG_FILE"` efface l'historique, et les lignes déjà écrites pendant la validation |
-| En-tête horodaté par exécution | Sépare les runs dans un fichier cumulatif |
-| Horodatage **par ligne** | Un log sert à corréler avec un incident |
-| Retirer les séquences ANSI | Le terminal garde ses couleurs, le fichier reste lisible et copiable |
-| `chmod 600` | Un journal d'opérations d'infra n'a pas à être lisible par tous |
-| Ne jamais journaliser une valeur sensible | Un helper qui affiche la ligne de commande complète capture les jetons passés en argument |
+| Open in **append** mode, never truncate | `: > "$LOG_FILE"` erases the history, and the lines already written during validation |
+| Timestamped header per run | Separates runs in a cumulative file |
+| Timestamp **per line** | A log is used to correlate with an incident |
+| Strip ANSI sequences | The terminal keeps its colors, the file stays readable and copyable |
+| `chmod 600` | A log of infra operations has no reason to be readable by everyone |
+| Never log a sensitive value | A helper that prints the full command line captures tokens passed as arguments |
 
-Si la redirection passe par `tee` et une substitution de processus, prévoir le drainage avant la sortie du shell, sinon la fin du log manque.
+If the redirection goes through `tee` and a process substitution, plan for draining before the shell exits, otherwise the end of the log is missing.
 
-## Sortie lisible par un humain et par une machine
+## Output readable by a human and by a machine
 
-**Le code de sortie est l'interface machine** : 0 si tout est conforme, non nul sinon. C'est ce qui permet de brancher le script dans une CI.
+**The exit code is the machine interface**: 0 if everything is compliant, non-zero otherwise. This is what lets you plug the script into a CI.
 
-**Le rapport est pour l'humain.** Sa sortie console suit le contrat d'Ansible décrit dans `makefile-builder` (section « Contrat de sortie ») : `TASK [...]`, une issue par ligne, palette Ansible, `PLAY RECAP` chiffré. Les mots des issues et des compteurs sont ceux de l'outil qui tourne, pas une liste figée. **REQUIRED BACKGROUND :** lire cette section de `makefile-builder` avant d'écrire la sortie d'un script, même sans Makefile.
+**The report is for the human.** Its console output follows the Ansible contract described in `makefile-builder` (section "Output contract"): `TASK [...]`, one outcome per line, Ansible palette, numbered `PLAY RECAP`. The words for outcomes and counters are those of the tool that runs, not a fixed list. **REQUIRED BACKGROUND:** read that section of `makefile-builder` before writing a script's output, even without a Makefile.
 
-Confondre "cassé" et "non vérifiable" produit de fausses alertes : un état `skipped` distinct de `failed` reste obligatoire.
+Confusing "broken" and "not verifiable" produces false alerts: a `skipped` state distinct from `failed` remains mandatory.
 
-Colorer seulement si la sortie est un terminal, et respecter `NO_COLOR`. Éviter `clear` et les manipulations de curseur : ça casse le passage dans un pipe et pollue les journaux de CI.
+Use colors only if the output is a terminal, and respect `NO_COLOR`. Avoid `clear` and cursor manipulation: it breaks piping and pollutes CI logs.
 
-## Pièges de syntaxe et de lint
+## Syntax and lint pitfalls
 
-Passer `shellcheck -x` systématiquement, et le câbler dans une cible `make lint`. Le `-x` suit les fichiers sourcés, sans lui les bibliothèques partagées ne sont pas analysées. Ajouter `# shellcheck source=chemin/lib.sh` au-dessus de chaque `source`.
+Run `shellcheck -x` every time, and wire it into a `make lint` target. The `-x` follows sourced files, without it the shared libraries are not analyzed. Add `# shellcheck source=path/lib.sh` above each `source`.
 
-| Piège | Correction |
+| Pitfall | Fix |
 |---|---|
-| `local x="$(cmd)"` (SC2155) | Déclarer puis affecter : `local x; x="$(cmd)"` |
-| `.*?` dans `grep -E` ou `awk` | Syntaxe PCRE dans un contexte ERE. Utiliser `[^x]*` ou un `awk` avec `FS` adapté |
-| `sed -u` | Spécifique GNU, ne tourne pas sur BSD ni macOS |
-| Un seul `trap ... EXIT` | Bash n'en garde qu'un. Le second remplace le premier en silence |
-| Regex de CIDR qui valide la forme | `999.999.999.999/99` passe. Valider aussi les valeurs si ça compte |
+| `local x="$(cmd)"` (SC2155) | Declare then assign: `local x; x="$(cmd)"` |
+| `.*?` in `grep -E` or `awk` | PCRE syntax in an ERE context. Use `[^x]*` or an `awk` with a suitable `FS` |
+| `sed -u` | GNU-specific, does not run on BSD or macOS |
+| A single `trap ... EXIT` | Bash keeps only one. The second silently replaces the first |
+| CIDR regex that validates the shape | `999.999.999.999/99` passes. Also validate the values if it matters |
 
-Côté Makefile : les variables issues d'un `include` deviennent des variables Make et **gagnent sur l'environnement**. `VAR=x make cible` reste sans effet, il faut écrire `make cible VAR=x`. Et `$(MAKEFILE_LIST)` contient les fichiers inclus, pas seulement le Makefile.
+On the Makefile side: variables coming from an `include` become Make variables and **win over the environment**. `VAR=x make target` has no effect, you must write `make target VAR=x`. And `$(MAKEFILE_LIST)` contains the included files, not only the Makefile.
 
-## Erreurs fréquentes
+## Common mistakes
 
-| Erreur | Conséquence |
+| Mistake | Consequence |
 |---|---|
-| Loguer sur stdout dans une fonction capturée | La valeur de retour contient le log |
-| Couper l'ancien accès avant de tester le nouveau | Verrouillage hors de la ressource administrée |
-| Créer une identité et la considérer opérationnelle | Un groupe vide ou non rattaché n'ouvre aucun accès |
-| `if` sans `else` avant une commande d'activation | L'API refuse au second passage, le script casse |
-| Tronquer le fichier de log au démarrage | Perte de l'historique et des lignes déjà écrites |
-| Confirmer à chaque étape d'un lot | L'opérateur finit par valider sans lire |
-| `exit 0` quand l'utilisateur refuse | L'appelant ne distingue plus "fait" de "refusé" |
+| Logging to stdout in a captured function | The return value contains the log |
+| Cutting the old access before testing the new one | Locked out of the managed resource |
+| Creating an identity and considering it operational | An empty or unattached group opens no access |
+| `if` without `else` before an enable command | The API refuses on the second pass, the script breaks |
+| Truncating the log file at startup | Loss of the history and of the lines already written |
+| Confirming at every step of a batch | The operator ends up approving without reading |
+| `exit 0` when the user refuses | The caller can no longer tell "done" from "refused" |
