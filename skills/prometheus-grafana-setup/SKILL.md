@@ -30,7 +30,7 @@ helm install kube-prometheus prometheus-community/kube-prometheus-stack \
 # docker-compose.yml (dev)
 services:
   prometheus:
-    image: prom/prometheus:v3.13.0   # branche LTS
+    image: prom/prometheus:v3.13.5   # branche LTS
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - ./alerts:/etc/prometheus/alerts
@@ -40,7 +40,7 @@ services:
     ports: ["9090:9090"]
 
   grafana:
-    image: grafana/grafana:13.2.0
+    image: grafana/grafana:13.2.4
     environment:
       GF_SECURITY_ADMIN_PASSWORD: changeme
     volumes:
@@ -283,7 +283,7 @@ Placer les fichiers JSON exportés dans `/etc/grafana/dashboards/`, rechargés s
 ```bash
 # Vérifier la config Prometheus
 docker run --rm -v $(pwd)/prometheus.yml:/etc/prometheus/prometheus.yml \
-  prom/prometheus:v3.13.0 promtool check config /etc/prometheus/prometheus.yml
+  prom/prometheus:v3.13.5 promtool check config /etc/prometheus/prometheus.yml
 
 # Vérifier les règles d'alerte
 promtool check rules alerts/*.yml

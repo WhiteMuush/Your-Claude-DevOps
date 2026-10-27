@@ -256,7 +256,7 @@ molecule test   # create → converge → verify → destroy
 ## Bonnes pratiques 2026
 
 - **Collections > rôles communautaires** : utiliser `ansible.posix`, `community.general`, `community.docker` via `requirements.yml` + `ansible-galaxy collection install -r requirements.yml`.
-- **`ansible.cfg` versionné** dans le dépôt : `[defaults] host_key_checking = True`, `forks = 10`, `callback_whitelist = profile_tasks`.
+- **`ansible.cfg` versionné** dans le dépôt : `[defaults] host_key_checking = True`, `forks = 10`, `callbacks_enabled = ansible.posix.profile_tasks`. L'ancienne clé `callback_whitelist` a été supprimée dans ansible-core 2.15 : Ansible l'ignore sans erreur et le callback ne tourne plus.
 - **Épingler la version Ansible** dans le CI (`pip install ansible-core==2.21.*`) pour éviter les régressions.
 - **Pas de boucle `with_items`** → remplacer par `loop` (syntaxe moderne depuis Ansible 2.5).
 - **Noms de modules pleinement qualifiés (FQCN)** : écrire `ansible.builtin.service` et non `service`.
