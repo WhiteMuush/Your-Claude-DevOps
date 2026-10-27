@@ -1,62 +1,62 @@
 ---
 name: building-obsidian-doc-vault
-description: À utiliser quand on crée, réorganise ou complète un vault Obsidian de documentation technique (antisèches, procédures, notes "comment faire"), quand le graphe Obsidian est illisible, mal coloré ou change de disposition à chaque ouverture, ou quand Claude doit retrouver les méthodes habituelles de l'utilisateur dans ses notes. Se déclenche avec "Obsidian", "vault", "coffre", "graphe", "graph.json", "antisèche", "doc rapide".
+description: Use when creating, reorganizing or extending an Obsidian vault of technical documentation (cheat sheets, procedures, how-to notes), when the Obsidian graph is unreadable, wrongly colored or rearranges itself on every opening, or when Claude must find the user's usual methods in their notes. Triggers on "Obsidian", "vault", "graph view", "graph.json", "cheat sheet", "quick docs", "knowledge base".
 ---
 
-# Vault Obsidian de doc rapide
+# Quick-docs Obsidian vault
 
-Un arbre strict : hub, thèmes, sous-thèmes, notes. Le graphe reste lisible tant qu'une note ne pointe **que vers son parent et ses enfants**.
+A strict tree: hub, themes, sub-themes, notes. The graph stays readable as long as a note links **only to its parent and its children**.
 
 ## Structure
 
-- Un dossier par thème ou sous-thème, avec une note au nom **identique** au dossier (`Kubernetes/Manifests/Manifests.md`) qui liste ses enfants en `[[...]]`.
-- Le hub, à la racine, ne liste que les thèmes de premier niveau.
-- Nom de note préfixé par son thème (`Terraform State GitLab`), donc unique dans tout le vault.
-- Rien d'autre : ni frontmatter, ni modèles, ni `CLAUDE.md`. Le pointeur vers le vault va dans la mémoire de Claude, qui cherche par nom de dossier et de note.
+- One folder per theme or sub-theme, holding a note named **exactly** like the folder (`Kubernetes/Manifests/Manifests.md`) that lists its children as `[[...]]`.
+- The hub, at the root, lists only the top-level themes.
+- Note names start with their theme (`Terraform State GitLab`), so they are unique across the vault.
+- Nothing else: no frontmatter, no templates, no `CLAUDE.md`. The pointer to the vault goes in Claude's memory, which then searches by folder and note name.
 
-## Format d'une note
+## Note format
 
 ````markdown
-Thème : [[Parent]]
+Theme: [[Parent]]
 
 # Terraform State GitLab
 
-Une phrase qui dit à quoi ça sert, avec des mots simples.
+One sentence that says what it is for, in plain words.
 
-1. L'étape, puis le bloc à copier :
+1. The step, then the block to copy:
    ```bash
    terraform init -migrate-state
    ```
-   - `-migrate-state` : copie le state local vers le nouveau backend.
+   - `-migrate-state`: copies the local state to the new backend.
 ````
 
-Un renvoi vers une autre branche s'écrit en texte ("voir la note X"), jamais en `[[lien]]`.
+A pointer to another branch is plain text ("see the X note"), never a `[[link]]`.
 
-## Contrôle
+## Check
 
-`check-vault.sh <vault> [hub]` après chaque ajout (1 000 notes en moins de 0,1 s). Il signale tout écart aux règles ci-dessus, et ignore comme Obsidian les liens dans un bloc de code.
+`check-vault.sh <vault> [hub]` after every change (1,000 notes in under 0.1 s). It reports any break of the rules above and, like Obsidian, ignores links inside code blocks. Any label works on line 1 (`Theme:`, `Thème :`), only the link is checked.
 
-## Couleurs du graphe
+## Graph colors
 
-`colorGroups` dans `.obsidian/graph.json`, une entrée par dossier :
+`colorGroups` in `.obsidian/graph.json`, one entry per folder:
 
 ```json
 { "query": "path:\"Terraform/\"", "color": { "a": 1, "rgb": 9133302 } }
 ```
 
-- Le `/` final est obligatoire : `path:"Terraform"` colore aussi `Secrets/Secrets Terraform.md`.
-- `rgb` est en décimal : `0x8B5CF6` = `9133302`.
-- Obsidian réécrit ce fichier : vérifier qu'il est fermé avant d'écrire (sous WSL, `tasklist.exe | grep -i obsidian`).
-- Le bouton "Restaurer les paramètres par défaut" du graphe efface aussi les couleurs.
+- The trailing `/` is required: `path:"Terraform"` also colors `Secrets/Secrets Terraform.md`.
+- `rgb` is decimal: `0x8B5CF6` = `9133302`.
+- Obsidian rewrites this file: make sure it is closed before writing (on WSL, `tasklist.exe | grep -i obsidian`).
+- The graph's "Restore default settings" button also wipes the colors.
 
-## Positions figées
+## Frozen positions
 
-Obsidian ne garde pas les positions. Sans plugin tiers : copier `graphe-fige/` dans `.obsidian/plugins/` (un fichier lisible, sans dépendance ni réseau).
+Obsidian does not keep node positions. Without a third-party plugin: copy `frozen-graph/` into `.obsidian/plugins/` (one readable file, no dependency, no network).
 
-- Commandes "Figer le graphe" et "Libérer le graphe". Tirer une note libère le graphe, la lâcher refige tout.
-- API interne non documentée (`renderer.worker.postMessage({ forceNode })`) : une mise à jour d'Obsidian peut le désactiver, sans rien casser.
-- L'activer oblige à quitter le mode restreint d'Obsidian : relire `main.js` avant, et n'installer aucun autre plugin.
-- Tests : `node --test graphe-fige/main.test.js`.
+- Commands "Freeze the graph" and "Release the graph". Dragging a node releases the graph, dropping it freezes everything again.
+- Undocumented internal API (`renderer.worker.postMessage({ forceNode })`): an Obsidian update can disable it, without breaking anything.
+- Enabling it means leaving Obsidian's restricted mode: read `main.js` first, and install no other plugin.
+- Tests: `node --test frozen-graph/main.test.js`.
 
 ## Git
 
@@ -64,17 +64,17 @@ Obsidian ne garde pas les positions. Sans plugin tiers : copier `graphe-fige/` d
 .obsidian/workspace*.json
 .trash/
 .obsidian/plugins/*
-!.obsidian/plugins/graphe-fige/
+!.obsidian/plugins/frozen-graph/
 .obsidian/community-plugins.json
 ```
 
-Un clone n'active aucun plugin et ne synchronise rien. Poste en lecture seule : `git remote set-url --push origin no_push`. Avant de publier : `gitleaks git .`.
+A clone enables no plugin and syncs nothing. Read-only machine: `git remote set-url --push origin no_push`. Before publishing: `gitleaks git .`.
 
-## Erreurs fréquentes
+## Common mistakes
 
-| Erreur | Effet |
+| Mistake | Effect |
 |---|---|
-| `[[lien]]` vers une autre branche | Graphe emmêlé |
-| `path:"Nom"` sans `/` | Notes d'autres branches mal colorées |
-| `graph.json` modifié avec Obsidian ouvert | Modification écrasée |
-| Plugin communautaire pour figer le graphe | Code tiers non relu |
+| `[[link]]` to another branch | Tangled graph |
+| `path:"Name"` without `/` | Notes from other branches get the wrong color |
+| `graph.json` edited while Obsidian is open | Change overwritten |
+| Community plugin to freeze the graph | Third-party code nobody reviewed |

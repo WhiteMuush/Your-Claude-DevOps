@@ -1,9 +1,0 @@
-{
-  "id": "graphe-fige",
-  "name": "Graphe figé",
-  "version": "1.1.0",
-  "minAppVersion": "1.0.0",
-  "description": "Garde chaque note du graphe à la place où on l'a figée.",
-  "author": "Your-Claude-DevOps",
-  "isDesktopOnly": false
-}

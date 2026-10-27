@@ -1,4 +1,4 @@
-// Tests du plugin Graphe figé, avec un faux module obsidian et un faux moteur de graphe.
+// Tests for the Frozen Graph plugin, with a fake obsidian module and a fake graph engine.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const Module = require('node:module');
@@ -9,8 +9,8 @@ Module._load = function (request, ...rest) {
     return originalLoad.call(this, request, ...rest);
 };
 
-const GrapheFige = require(process.env.PLUGIN_MAIN || require('node:path').join(__dirname, 'main.js'));
-const { readPositions, pinAll, pinAppearing, releaseAll, followDrags, untilNodesStable } = GrapheFige.helpers;
+const FrozenGraph = require(process.env.PLUGIN_MAIN || require('node:path').join(__dirname, 'main.js'));
+const { readPositions, pinAll, pinAppearing, releaseAll, followDrags, untilNodesStable } = FrozenGraph.helpers;
 
 function fakeRenderer(nodes) {
     const sent = [];
@@ -21,27 +21,27 @@ function makeNodes(count) {
     return Array.from({ length: count }, (_, i) => ({ id: `${i}.md`, x: 0, y: 0 }));
 }
 
-test('readPositions garde id, x et y de chaque nœud', () => {
+test('readPositions keeps id, x and y of every node', () => {
     const nodes = [{ id: 'A.md', x: 1, y: 2, extra: true }, { id: 'B.md', x: -3, y: 4 }];
     assert.deepEqual(readPositions(nodes), { 'A.md': { x: 1, y: 2 }, 'B.md': { x: -3, y: 4 } });
 });
 
-test('pinAll bloque chaque nœud enregistré à sa position', () => {
+test('pinAll pins every saved node at its position', () => {
     const r = fakeRenderer([]);
     pinAll(r, { 'A.md': { x: 1, y: 2 } });
     assert.deepEqual(r.sent, [{ forceNode: { id: 'A.md', x: 1, y: 2 } }]);
 });
 
-test('pinAppearing bloque seulement les nœuds présents et enregistrés', () => {
-    const r = fakeRenderer([{ id: 'A.md', x: 0, y: 0 }, { id: 'Nouveau.md', x: 0, y: 0 }]);
+test('pinAppearing pins only nodes that are both present and saved', () => {
+    const r = fakeRenderer([{ id: 'A.md', x: 0, y: 0 }, { id: 'New.md', x: 0, y: 0 }]);
     const pinned = new Set();
-    pinAppearing(r, { 'A.md': { x: 1, y: 2 }, 'Absent.md': { x: 3, y: 4 } }, pinned);
+    pinAppearing(r, { 'A.md': { x: 1, y: 2 }, 'Missing.md': { x: 3, y: 4 } }, pinned);
 
     assert.deepEqual(r.sent, [{ forceNode: { id: 'A.md', x: 1, y: 2 } }]);
     assert.deepEqual([...pinned], ['A.md']);
 });
 
-test('pinAppearing ne rebloque pas un nœud déjà bloqué', () => {
+test('pinAppearing never pins the same node twice', () => {
     const r = fakeRenderer([{ id: 'A.md', x: 0, y: 0 }]);
     const pinned = new Set();
     const positions = { 'A.md': { x: 1, y: 2 }, 'B.md': { x: 3, y: 4 } };
@@ -55,7 +55,7 @@ test('pinAppearing ne rebloque pas un nœud déjà bloqué', () => {
     ]);
 });
 
-test('releaseAll libère chaque nœud enregistré', () => {
+test('releaseAll releases every saved node', () => {
     const r = fakeRenderer([]);
     releaseAll(r, { 'A.md': { x: 1, y: 2 } });
     assert.deepEqual(r.sent, [{ forceNode: { id: 'A.md', x: null, y: null } }]);
@@ -68,7 +68,7 @@ function frozenRenderer() {
     return { r, state };
 }
 
-test('tirer une note libère toutes les autres', () => {
+test('dragging a node releases all the others', () => {
     const { r } = frozenRenderer();
     r.worker.postMessage({ forceNode: { id: 'A.md', x: 5, y: 5 } });
 
@@ -79,7 +79,7 @@ test('tirer une note libère toutes les autres', () => {
     ]);
 });
 
-test('la suite du même tirage ne relibère pas les autres', () => {
+test('the rest of the same drag does not release them again', () => {
     const { r } = frozenRenderer();
     r.worker.postMessage({ forceNode: { id: 'A.md', x: 5, y: 5 } });
     r.sent.length = 0;
@@ -88,7 +88,7 @@ test('la suite du même tirage ne relibère pas les autres', () => {
     assert.deepEqual(r.sent, [{ forceNode: { id: 'A.md', x: 6, y: 6 } }]);
 });
 
-test('lâcher la note refige tout à la position courante et enregistre', () => {
+test('dropping the node freezes everything where it stands and saves', () => {
     const { r, state } = frozenRenderer();
     r.worker.postMessage({ forceNode: { id: 'A.md', x: 5, y: 5 } });
     r.nodes = [{ id: 'A.md', x: 10, y: 10 }, { id: 'B.md', x: 20, y: 20 }, { id: 'C.md', x: 30, y: 30 }];
@@ -104,7 +104,7 @@ test('lâcher la note refige tout à la position courante et enregistre', () => 
     assert.deepEqual(state.drops, [{ 'A.md': { x: 10, y: 10 }, 'B.md': { x: 20, y: 20 }, 'C.md': { x: 30, y: 30 } }]);
 });
 
-test('un graphe non figé laisse passer tous les messages', () => {
+test('a graph that was never frozen lets every message through', () => {
     const r = fakeRenderer([{ id: 'A.md', x: 1, y: 1 }]);
     const drops = [];
     followDrags(r, () => ({}), (positions) => drops.push(positions));
@@ -119,7 +119,7 @@ test('un graphe non figé laisse passer tous les messages', () => {
     assert.deepEqual(drops, []);
 });
 
-test('les messages du plugin ne sont pas pris pour un tirage', () => {
+test('plugin messages are never taken for a drag', () => {
     const { r, state } = frozenRenderer();
     pinAll(r, state.positions);
     releaseAll(r, state.positions);
@@ -128,7 +128,7 @@ test('les messages du plugin ne sont pas pris pour un tirage', () => {
     assert.deepEqual(state.drops, []);
 });
 
-test('followDrags ne patche le worker qu\'une fois', () => {
+test('followDrags patches the worker only once', () => {
     const { r, state } = frozenRenderer();
     followDrags(r, () => state.positions, () => {});
     r.worker.postMessage({ forceNode: { id: 'A.md', x: 5, y: 5 } });
@@ -136,7 +136,7 @@ test('followDrags ne patche le worker qu\'une fois', () => {
     assert.equal(r.sent.length, 3);
 });
 
-test('untilNodesStable appelle onCheck à chaque passage et onDone une fois stable', () => {
+test('untilNodesStable calls onCheck on every pass and onDone once stable', () => {
     const r = fakeRenderer([]);
     const queue = [];
     let checks = 0;
@@ -153,7 +153,7 @@ test('untilNodesStable appelle onCheck à chaque passage et onDone une fois stab
     assert.equal(queue.length, 0);
 });
 
-test('untilNodesStable appelle quand même onDone après trop d\'essais', () => {
+test('untilNodesStable still calls onDone after too many checks', () => {
     const r = fakeRenderer([]);
     const queue = [];
     let done = 0;
@@ -168,7 +168,7 @@ test('untilNodesStable appelle quand même onDone après trop d\'essais', () => 
     assert.equal(queue.length, 0);
 });
 
-test('pinAppearing ne relit plus les nœuds une fois tout bloqué', () => {
+test('pinAppearing stops reading nodes once everything is pinned', () => {
     let reads = 0;
     const nodes = [{ id: 'A.md', x: 0, y: 0 }];
     const r = { sent: [], worker: { postMessage: () => {} } };

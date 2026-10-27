@@ -1,7 +1,7 @@
-// Plugin Obsidian qui garde chaque note du graphe à la place où on l'a figée.
+// Obsidian plugin that keeps every graph node where it was frozen.
 const { Plugin, Notice } = require('obsidian');
 
-// Vérification à chaque image : stable après 10 images sans nouveau nœud, abandon après 3 secondes environ.
+// Checked on every frame: stable after 10 frames without a new node, gives up after about 3 seconds.
 const NODE_CHECKS = { stableChecks: 10, maxChecks: 180 };
 
 function readPositions(nodes) {
@@ -10,10 +10,10 @@ function readPositions(nodes) {
     return positions;
 }
 
-// Les messages du plugin passent par le canal d'origine du worker, pour ne jamais être pris pour un geste de la souris.
+// Plugin messages go through the worker's original channel, so they are never taken for a mouse gesture.
 function send(renderer, message) {
     const worker = renderer.worker;
-    if (worker.grapheFigeSend) worker.grapheFigeSend(message);
+    if (worker.frozenGraphSend) worker.frozenGraphSend(message);
     else worker.postMessage(message);
 }
 
@@ -39,12 +39,12 @@ function releaseAll(renderer, positions) {
     }
 }
 
-// Pendant qu'on tire une note, tout le graphe redevient vivant, puis il est refigé là où il est au lâcher.
+// While a node is dragged the whole graph comes alive, then it is frozen again where it stands on drop.
 function followDrags(renderer, getPositions, onDrop) {
     const worker = renderer.worker;
-    if (worker.grapheFigeSend) return;
+    if (worker.frozenGraphSend) return;
     const post = worker.postMessage.bind(worker);
-    worker.grapheFigeSend = post;
+    worker.frozenGraphSend = post;
     let dragging = false;
 
     worker.postMessage = (message) => {
@@ -70,7 +70,7 @@ function followDrags(renderer, getPositions, onDrop) {
     };
 }
 
-// Le graphe crée ses nœuds petit à petit, on appelle onCheck à chaque passage puis onDone quand leur nombre ne bouge plus.
+// The graph creates its nodes little by little: onCheck runs on every pass, onDone once their count stops moving.
 function untilNodesStable(renderer, onCheck, onDone, schedule = (fn) => requestAnimationFrame(fn), limits = NODE_CHECKS) {
     let last = -1;
     let same = 0;
@@ -91,13 +91,13 @@ function untilNodesStable(renderer, onCheck, onDone, schedule = (fn) => requestA
     schedule(check);
 }
 
-class GrapheFige extends Plugin {
+class FrozenGraph extends Plugin {
     async onload() {
         const data = await this.loadData();
         this.positions = (data && data.positions) || {};
 
-        this.addCommand({ id: 'figer', name: 'Figer le graphe', callback: () => this.freeze() });
-        this.addCommand({ id: 'liberer', name: 'Libérer le graphe', callback: () => this.release() });
+        this.addCommand({ id: 'freeze', name: 'Freeze the graph', callback: () => this.freeze() });
+        this.addCommand({ id: 'release', name: 'Release the graph', callback: () => this.release() });
         this.registerEvent(this.app.workspace.on('layout-change', () => this.restoreGraphs()));
         this.registerEvent(this.app.vault.on('rename', (file, oldPath) => this.rename(oldPath, file.path)));
         this.app.workspace.onLayoutReady(() => this.restoreGraphs());
@@ -121,11 +121,11 @@ class GrapheFige extends Plugin {
                 this.positions = positions;
                 this.save();
             });
-            if (renderer.grapheFigeRestored) continue;
-            renderer.grapheFigeRestored = true;
+            if (renderer.frozenGraphRestored) continue;
+            renderer.frozenGraphRestored = true;
             if (Object.keys(this.positions).length === 0) continue;
 
-            // Le graphe reste caché pendant qu'on replace les notes, pour ne pas voir l'explosion de départ.
+            // The graph stays hidden while nodes are put back, so the opening burst is never seen.
             view.contentEl.style.opacity = '0';
             const pinned = new Set();
             const total = Object.keys(this.positions).length;
@@ -140,13 +140,13 @@ class GrapheFige extends Plugin {
     async freeze() {
         const [renderer] = this.renderers();
         if (!renderer) {
-            new Notice('Ouvre le graphe avant de le figer.');
+            new Notice('Open the graph before freezing it.');
             return;
         }
         this.positions = readPositions(renderer.nodes);
         pinAll(renderer, this.positions);
         await this.save();
-        new Notice(`Graphe figé : ${Object.keys(this.positions).length} notes.`);
+        new Notice(`Graph frozen: ${Object.keys(this.positions).length} notes.`);
     }
 
     async release() {
@@ -154,7 +154,7 @@ class GrapheFige extends Plugin {
         this.positions = {};
         for (const renderer of this.renderers()) releaseAll(renderer, previous);
         await this.save();
-        new Notice('Graphe libéré.');
+        new Notice('Graph released.');
     }
 
     async rename(oldPath, newPath) {
@@ -169,5 +169,5 @@ class GrapheFige extends Plugin {
     }
 }
 
-GrapheFige.helpers = { readPositions, pinAll, pinAppearing, releaseAll, followDrags, untilNodesStable };
-module.exports = GrapheFige;
+FrozenGraph.helpers = { readPositions, pinAll, pinAppearing, releaseAll, followDrags, untilNodesStable };
+module.exports = FrozenGraph;

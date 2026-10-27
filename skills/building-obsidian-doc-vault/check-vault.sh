@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# Vérifie en un seul passage awk que chaque note du vault est reliée à son seul parent et que tous les liens résolvent.
+# Checks in a single awk pass that every vault note links to its one parent and that every link resolves.
 set -euo pipefail
 
 usage() {
-    printf 'usage: %s <vault> [hub, défaut My-Brain]\n' "${0##*/}" >&2
+    printf 'usage: %s <vault> [hub, default Home]\n' "${0##*/}" >&2
     exit 2
 }
 
-# Écrit sur stdout la liste des notes, séparées par un octet nul, README de la racine exclu.
+# Writes the note list on stdout, NUL separated, without the root README.
 list_notes() {
     local vault="$1"
     find "${vault}/" -name '*.md' -not -path '*/.obsidian/*' -not -path '*/.git/*' \
         -not -path "${vault}/README.md" -print0 | sort -z
 }
 
-# Affiche PASS sur stdout, chaque erreur sur stderr, et sort en 1 au moindre problème.
+# Prints PASS on stdout, each error on stderr, and exits 1 on the first problem found.
 check_notes() {
     local hub="$1"
     shift
@@ -23,20 +23,21 @@ check_notes() {
 
     FNR == 1 {
         name = FILENAME; sub(/.*\//, "", name); sub(/\.md$/, "", name)
-        if (name in seen) err(name " : nom en double, les liens [[" name "]] deviennent ambigus")
+        if (name in seen) err(name ": duplicate name, [[" name "]] links become ambiguous")
         seen[name] = 1; total++; code = 0
-        if ($0 == "---") err(name " : frontmatter interdit")
+        if ($0 == "---") err(name ": frontmatter is not allowed")
         if (name != hub) {
-            if ($0 ~ /^Thème : \[\[[^]]+\]\]$/) {
-                p = $0; sub(/^Thème : \[\[/, "", p); sub(/\]\]$/, "", p); parent[name] = p
-            } else err(name " : ligne 1 différente de \"Thème : [[Parent]]\"")
+            # Any label works ("Theme: [[X]]", "Thème : [[X]]"), only the link matters.
+            if ($0 ~ /^[^[]+: \[\[[^]]+\]\]$/) {
+                p = $0; sub(/^[^[]+: \[\[/, "", p); sub(/\]\]$/, "", p); parent[name] = p
+            } else err(name ": line 1 is not \"Theme: [[Parent]]\"")
         }
     }
 
-    # Le tiret cadratin est écrit en octets UTF-8 pour ne jamais apparaître dans ce fichier.
-    /\342\200\224/ && !(name in dash) { dash[name] = 1; err(name " : tiret cadratin") }
+    # The em dash is written as UTF-8 bytes so it never appears in this file.
+    /\342\200\224/ && !(name in dash) { dash[name] = 1; err(name ": em dash") }
 
-    # Obsidian ignore les liens dans un bloc de code, le contrôle aussi.
+    # Obsidian ignores links inside code blocks, so does this check.
     /^[[:space:]]*```/ { code = !code; next }
 
     !code {
@@ -50,19 +51,19 @@ check_notes() {
     }
 
     END {
-        if (!(hub in seen)) err(hub ".md absent")
+        if (!(hub in seen)) err(hub ".md is missing")
         for (i = 1; i <= links; i++) {
             s = from[i]; t = to[i]; linked[s SUBSEP t] = 1
-            if (!(t in seen)) err(s " : lien cassé [[" t "]]")
-            # Tester avec "in" avant de lire : en awk, lire parent[x] crée une entrée vide.
+            if (!(t in seen)) err(s ": broken link [[" t "]]")
+            # Test with "in" before reading: in awk, reading parent[x] creates an empty entry.
             else if (!((s in parent) && t == parent[s]) && !((t in parent) && parent[t] == s))
-                err(s " : lien croisé vers [[" t "]], seuls le parent et les enfants sont permis")
+                err(s ": cross link to [[" t "]], only the parent and the children are allowed")
         }
         for (n in parent) {
-            if (!(parent[n] in seen)) err(n " : parent [[" parent[n] "]] introuvable")
-            else if (!((parent[n] SUBSEP n) in linked)) err(n " : absent de la liste de [[" parent[n] "]]")
+            if (!(parent[n] in seen)) err(n ": parent [[" parent[n] "]] not found")
+            else if (!((parent[n] SUBSEP n) in linked)) err(n ": missing from the list in [[" parent[n] "]]")
         }
-        if (errors) { print errors " erreur(s)" > "/dev/stderr"; exit 1 }
+        if (errors) { print errors " error(s)" > "/dev/stderr"; exit 1 }
         print "PASS " total " notes"
     }
     ' "$@"
@@ -70,12 +71,12 @@ check_notes() {
 
 main() {
     [[ $# -ge 1 && $# -le 2 ]] || usage
-    local vault="${1%/}" hub="${2:-My-Brain}"
-    [[ -d "${vault}" ]] || { printf 'FAIL %s n'\''est pas un dossier\n' "${vault}" >&2; exit 2; }
+    local vault="${1%/}" hub="${2:-Home}"
+    [[ -d "${vault}" ]] || { printf 'FAIL %s is not a directory\n' "${vault}" >&2; exit 2; }
 
     local -a notes
     mapfile -d '' notes < <(list_notes "${vault}")
-    [[ ${#notes[@]} -gt 0 ]] || { printf 'FAIL aucune note dans %s\n' "${vault}" >&2; exit 1; }
+    [[ ${#notes[@]} -gt 0 ]] || { printf 'FAIL no note in %s\n' "${vault}" >&2; exit 1; }
 
     check_notes "${hub}" "${notes[@]}"
 }
