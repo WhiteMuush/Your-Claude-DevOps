@@ -15,3 +15,6 @@ backups/
 settings.local.json
 .last-*
 .caveman-active
+
+# Caches Python
+__pycache__/
