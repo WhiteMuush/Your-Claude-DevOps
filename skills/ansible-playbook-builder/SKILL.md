@@ -1,21 +1,21 @@
 ---
 name: ansible-playbook-builder
-description: Automatisation d'infrastructure avec Ansible, playbooks, roles, inventaires, vault et modules. Se déclenche avec "Ansible", "playbook", "ansible-playbook", "Ansible role", "Ansible vault", "automatisation serveur".
+description: Use when automating infrastructure with Ansible, playbooks, roles, inventories, vault and modules. Triggers on "Ansible", "playbook", "ansible-playbook", "Ansible role", "Ansible vault", "server automation".
 ---
 
 # Ansible Playbook Builder
 
 ## Workflow
 
-### 1. Analyser l'infrastructure cible
+### 1. Analyze the target infrastructure
 
-Recenser : systèmes d'exploitation (RHEL/Ubuntu/Debian), accès SSH (clé ou bastion), utilisateur de connexion (`ansible_user`), privilèges sudo.
+List: operating systems (RHEL/Ubuntu/Debian), SSH access (key or bastion), connection user (`ansible_user`), sudo privileges.
 
-**Critères de décision, inventaire statique vs dynamique :**
-- < 20 hôtes stables → inventaire statique INI/YAML
-- Cloud (AWS, Azure, GCP) ou infra éphémère → plugin dynamique (`amazon.aws.ec2`, `azure.azcollection.azure_rm`)
+**Decision criteria, static vs dynamic inventory:**
+- < 20 stable hosts → static INI/YAML inventory
+- Cloud (AWS, Azure, GCP) or ephemeral infra → dynamic plugin (`amazon.aws.ec2`, `azure.azcollection.azure_rm`)
 
-### 2. Structurer l'inventaire
+### 2. Structure the inventory
 
 ```ini
 # inventories/production/hosts.ini
@@ -35,8 +35,8 @@ inventories/
   production/
     hosts.ini
     group_vars/
-      all.yml          # variables communes
-      web.yml          # variables groupe web
+      all.yml          # common variables
+      web.yml          # web group variables
     host_vars/
       db01.prod.example.com.yml
   staging/
@@ -44,14 +44,14 @@ inventories/
     group_vars/
 ```
 
-Tester la connectivité avant tout playbook :
+Test connectivity before any playbook:
 ```bash
 ansible all -i inventories/production/hosts.ini -m ping
 ```
 
-### 3. Concevoir les playbooks
+### 3. Design the playbooks
 
-Structure minimale production-ready :
+Minimal production-ready structure:
 
 ```yaml
 # site.yml
@@ -81,24 +81,24 @@ Structure minimale production-ready :
       delegate_to: localhost
 ```
 
-**Commandes courantes :**
+**Common commands:**
 ```bash
-# Dry-run avec diff
+# Dry-run with diff
 ansible-playbook -i inventories/production/hosts.ini site.yml --check --diff
 
-# Exécution ciblée par tag
+# Targeted run by tag
 ansible-playbook site.yml -i inventories/production/hosts.ini --tags nginx
 
-# Limiter à un hôte
+# Limit to one host
 ansible-playbook site.yml -i inventories/production/hosts.ini --limit web01.prod.example.com
 
-# Verbose pour debug
+# Verbose for debugging
 ansible-playbook site.yml -vvv
 ```
 
-### 4. Développer les roles
+### 4. Develop the roles
 
-Structure standard à respecter :
+Standard structure to follow:
 ```
 roles/nginx/
   tasks/
@@ -112,24 +112,24 @@ roles/nginx/
   files/
     dhparam.pem
   defaults/
-    main.yml          # variables surchargeables (priorité basse)
+    main.yml          # overridable variables (low precedence)
   vars/
-    main.yml          # variables internes (priorité haute)
+    main.yml          # internal variables (high precedence)
   meta/
-    main.yml          # dépendances, galaxy_info
+    main.yml          # dependencies, galaxy_info
 ```
 
-`defaults/main.yml`, toujours documenter :
+`defaults/main.yml`, always document:
 ```yaml
-# Port d'écoute HTTP
+# HTTP listening port
 nginx_http_port: 80
-# Port d'écoute HTTPS (0 = désactivé)
+# HTTPS listening port (0 = disabled)
 nginx_https_port: 443
-# Nombre de workers (auto = nb CPUs)
+# Number of workers (auto = number of CPUs)
 nginx_worker_processes: auto
 ```
 
-Handler exemple :
+Handler example:
 ```yaml
 # handlers/main.yml
 - name: Restart nginx
@@ -139,31 +139,31 @@ Handler exemple :
   listen: Restart nginx
 ```
 
-### 5. Sécuriser avec Ansible Vault
+### 5. Secure with Ansible Vault
 
 ```bash
-# Chiffrer un fichier de secrets
+# Encrypt a secrets file
 ansible-vault encrypt inventories/production/group_vars/all/vault.yml
 
-# Éditer un fichier chiffré
+# Edit an encrypted file
 ansible-vault edit inventories/production/group_vars/all/vault.yml
 
-# Exécuter avec le mot de passe vault
+# Run with the vault password
 ansible-playbook site.yml --vault-password-file ~/.vault_pass.txt
-# ou via variable d'environnement CI/CD
+# or through a CI/CD environment variable
 ANSIBLE_VAULT_PASSWORD_FILE=~/.vault_pass.txt ansible-playbook site.yml
 ```
 
-Convention de nommage, préfixe `vault_` pour les variables chiffrées :
+Naming convention, `vault_` prefix for encrypted variables:
 ```yaml
-# group_vars/all/vars.yml (clair)
+# group_vars/all/vars.yml (plain text)
 db_password: "{{ vault_db_password }}"
 
-# group_vars/all/vault.yml (chiffré)
+# group_vars/all/vault.yml (encrypted)
 vault_db_password: "S3cr3t!"
 ```
 
-### 6. Templates Jinja2
+### 6. Jinja2 templates
 
 ```jinja2
 {# templates/nginx.conf.j2 #}
@@ -181,34 +181,34 @@ server {
 }
 ```
 
-Filtres utiles :
+Useful filters:
 ```yaml
-# Convertir en majuscules
+# Convert to uppercase
 - debug: msg="{{ env | upper }}"
-# Valeur par défaut
+# Default value
 - debug: msg="{{ timeout | default(30) }}"
-# Joindre une liste
+# Join a list
 - debug: msg="{{ groups['web'] | join(',') }}"
 ```
 
-### 7. Tester les playbooks
+### 7. Test the playbooks
 
 ```bash
 # Lint (ansible-lint >= 6)
 pip install ansible-lint
 ansible-lint site.yml
 
-# Syntaxe seule
+# Syntax only
 ansible-playbook --syntax-check site.yml
 
-# Test de role avec Molecule (driver Docker)
+# Role test with Molecule (Docker driver)
 pip install molecule molecule-docker
 cd roles/nginx
 molecule init scenario --driver-name docker
 molecule test   # create → converge → verify → destroy
 ```
 
-`molecule/default/verify.yml` minimal :
+Minimal `molecule/default/verify.yml`:
 ```yaml
 - name: Verify nginx
   hosts: all
@@ -219,18 +219,18 @@ molecule test   # create → converge → verify → destroy
         that: "'nginx' in services and services['nginx'].state == 'running'"
 ```
 
-### 8. Orchestrer les déploiements
+### 8. Orchestrate deployments
 
-**Rolling update :**
+**Rolling update:**
 ```yaml
 - hosts: web
-  serial: "25%"        # 25% des hôtes à la fois
+  serial: "25%"        # 25% of hosts at a time
   max_fail_percentage: 0
   roles:
     - nginx
 ```
 
-**Intégration CI/CD (GitHub Actions) :**
+**CI/CD integration (GitHub Actions):**
 ```yaml
 - name: Deploy to production
   run: |
@@ -241,26 +241,26 @@ molecule test   # create → converge → verify → destroy
     VAULT_PASS: ${{ secrets.ANSIBLE_VAULT_PASS }}
 ```
 
-## Garde-fous / Anti-patterns / Pièges
+## Guardrails / Anti-patterns / Pitfalls
 
-| Anti-pattern | Risque | Correction |
+| Anti-pattern | Risk | Fix |
 |---|---|---|
-| `shell: rm -rf /tmp/{{ app }}` | Idempotence cassée + risque injection | `file: path=... state=absent` |
-| `command: service nginx restart` | Non-idempotent | Module `service` + handler |
-| Variables en clair dans git | Fuite de secrets | Ansible Vault obligatoire |
-| `ignore_errors: true` systématique | Erreurs silencieuses en prod | Gérer explicitement les cas d'échec |
-| `gather_facts: false` par défaut | Perte des variables `ansible_*` | Désactiver seulement si perf critique et bien documenté |
-| Pas de `--check` avant prod | Changements imprévus | Toujours dry-run sur staging d'abord |
-| `become: true` sur tout le playbook | Surface d'attaque élargie | `become: true` uniquement sur les tâches qui le nécessitent |
+| `shell: rm -rf /tmp/{{ app }}` | Broken idempotence + injection risk | `file: path=... state=absent` |
+| `command: service nginx restart` | Not idempotent | `service` module + handler |
+| Plain-text variables in git | Secret leak | Ansible Vault is mandatory |
+| `ignore_errors: true` everywhere | Silent errors in prod | Handle failure cases explicitly |
+| `gather_facts: false` by default | Loss of `ansible_*` variables | Disable only if performance is critical and well documented |
+| No `--check` before prod | Unexpected changes | Always dry-run on staging first |
+| `become: true` on the whole playbook | Wider attack surface | `become: true` only on the tasks that need it |
 
-## Bonnes pratiques 2026
+## Best practices 2026
 
-- **Collections > rôles communautaires** : utiliser `ansible.posix`, `community.general`, `community.docker` via `requirements.yml` + `ansible-galaxy collection install -r requirements.yml`.
-- **`ansible.cfg` versionné** dans le dépôt : `[defaults] host_key_checking = True`, `forks = 10`, `callbacks_enabled = ansible.posix.profile_tasks`. L'ancienne clé `callback_whitelist` a été supprimée dans ansible-core 2.15 : Ansible l'ignore sans erreur et le callback ne tourne plus.
-- **Épingler la version Ansible** dans le CI (`pip install ansible-core==2.21.*`) pour éviter les régressions.
-- **Pas de boucle `with_items`** → remplacer par `loop` (syntaxe moderne depuis Ansible 2.5).
-- **Noms de modules pleinement qualifiés (FQCN)** : écrire `ansible.builtin.service` et non `service`.
-  `ansible-lint`, que ce workflow impose, échoue sur les noms courts (règle `fqcn`).
-- **`changed_when` et `failed_when`** explicites sur les modules `command`/`shell` inévitables.
-- **Secrets rotation** : intégrer HashiCorp Vault ou AWS Secrets Manager via le lookup `community.hashi_vault.vault_read` plutôt que Ansible Vault seul pour les environnements multi-équipes.
-- **Logs** : `log_path`, `no_log: true` sur les tâches sensibles, callback plugins. Voir le skill `logging-setup`.
+- **Collections > community roles**: use `ansible.posix`, `community.general`, `community.docker` through `requirements.yml` + `ansible-galaxy collection install -r requirements.yml`.
+- **Versioned `ansible.cfg`** in the repository: `[defaults] host_key_checking = True`, `forks = 10`, `callbacks_enabled = ansible.posix.profile_tasks`. The old `callback_whitelist` key was removed in ansible-core 2.15: Ansible ignores it without an error and the callback no longer runs.
+- **Pin the Ansible version** in CI (`pip install ansible-core==2.21.*`) to avoid regressions.
+- **No `with_items` loops** → replace them with `loop` (modern syntax since Ansible 2.5).
+- **Fully qualified module names (FQCN)**: write `ansible.builtin.service`, not `service`.
+  `ansible-lint`, which this workflow requires, fails on short names (`fqcn` rule).
+- **Explicit `changed_when` and `failed_when`** on unavoidable `command`/`shell` modules.
+- **Secrets rotation**: integrate HashiCorp Vault or AWS Secrets Manager through the `community.hashi_vault.vault_read` lookup rather than Ansible Vault alone for multi-team environments.
+- **Logs**: `log_path`, `no_log: true` on sensitive tasks, callback plugins. See the `logging-setup` skill.

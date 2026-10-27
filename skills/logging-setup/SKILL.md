@@ -1,21 +1,21 @@
 ---
 name: logging-setup
-description: Mise en place et revue des logs d'infrastructure et d'application, format de présentation console imposé (contrat Ansible : TASK, issues, PLAY RECAP), destination stdout/stderr, journal de run, niveaux, redaction des secrets, rotation et rétention. Couvre les spécificités Ansible, systemd et CI/CD, et renvoie à collecte.md pour les logs agrégés. Se déclenche avec "logs", "logging", "journalisation", "log_path", "no_log", "logrotate", "journald", "structured logging", "agrégation de logs", "rétention", "observabilité".
+description: Use when setting up or reviewing infrastructure and application logs, with a mandatory console presentation format (Ansible contract: TASK, outcomes, PLAY RECAP), stdout/stderr destination, run log, levels, secret redaction, rotation and retention. Covers Ansible, systemd and CI/CD specifics, and points to collecte.md for aggregated logs. Triggers on "logs", "logging", "journaling", "log_path", "no_log", "logrotate", "journald", "structured logging", "log aggregation", "retention", "observability".
 ---
 
-# Mise en place des logs
+# Setting up logs
 
-## Ce que ce skill n'enseigne pas
+## What this skill does not teach
 
-Un agent compétent horodate déjà ses lignes, met un niveau devant, et n'écrit pas `print()` partout. Ne pas dépenser de lignes là-dessus.
+A competent agent already timestamps its lines, puts a level in front, and does not write `print()` everywhere. Do not spend lines on that.
 
-Ce skill couvre les décisions qui se prennent au moment du branchement, celles qu'on ne peut plus corriger sans migration une fois que le collecteur ingère.
+This skill covers the decisions made at wiring time, the ones that can no longer be corrected without a migration once the collector is ingesting.
 
-## Présentation de la sortie : contrat Ansible
+## Output presentation: the Ansible contract
 
-**Cette section n'est pas une suggestion.** La sortie console suit le contrat d'Ansible décrit dans `makefile-builder` (section « Contrat de sortie ») : un opérateur qui a lu un `ansible-playbook` sait lire tous les scripts. **REQUIRED BACKGROUND :** lire cette section de `makefile-builder`, y compris « Les mots viennent de l'outil, la forme vient d'Ansible ».
+**This section is not a suggestion.** Console output follows the Ansible contract described in `makefile-builder` (section "Output contract"): an operator who has read an `ansible-playbook` run can read every script. **REQUIRED BACKGROUND:** read that section of `makefile-builder`, including "The words come from the tool, the form comes from Ansible".
 
-### Rendu attendu
+### Expected rendering
 
 ```
 TASK [aks : API server IP allowlist] *******************************************
@@ -28,144 +28,144 @@ PLAY RECAP *********************************************************************
 aks         : ok=4   changed=1   unreachable=0   failed=0   skipped=0
 ```
 
-| Élément | Rôle | Flux |
+| Element | Role | Stream |
 |---|---|---|
-| `TASK [role : action]` | Ouverture d'une étape, ligne d'étoiles jusqu'à 80 colonnes | stdout |
-| (indentation seule) | Détail, contexte, valeur lue | stdout |
-| Issue par ligne (`ok:`, `changed:`, ou le mot de l'outil) | Résultat de l'étape | stdout |
-| `[WARNING]:` | Anomalie absorbée, l'exécution continue | **stderr** |
-| `fatal:` / `unreachable:` | Échec, suivi d'une sortie non nulle | **stderr** |
-| `PLAY RECAP` | Compteurs de fin, nommés d'après l'outil | stdout |
+| `TASK [role : action]` | Opens a step, line of asterisks up to 80 columns | stdout |
+| (indentation only) | Detail, context, value read | stdout |
+| One outcome per line (`ok:`, `changed:`, or the tool's word) | Result of the step | stdout |
+| `[WARNING]:` | Absorbed anomaly, execution continues | **stderr** |
+| `fatal:` / `unreachable:` | Failure, followed by a non-zero exit | **stderr** |
+| `PLAY RECAP` | End counters, named after the tool | stdout |
 
-Règles de forme :
+Formatting rules:
 
-- **La couleur est un bonus, jamais l'information.** Le mot de l'issue reste lisible une fois les couleurs retirées.
-- **Couleurs désactivées** si la sortie n'est pas un terminal, ou si `NO_COLOR` est défini.
-- **Pas de niveau supplémentaire visible.** Pas de `DEBUG` à l'écran, pas d'émoji.
+- **Color is a bonus, never the information.** The outcome word stays readable once colors are removed.
+- **Colors are disabled** if the output is not a terminal, or if `NO_COLOR` is set.
+- **No extra visible level.** No `DEBUG` on screen, no emoji.
 
-Dans un autre langage, transposer la même forme. Le rendu ne change pas, seul le véhicule change.
+In another language, transpose the same form. The rendering does not change, only the vehicle does.
 
-## 1. Décider la destination avant le format
+## 1. Decide the destination before the format
 
-La première question n'est pas "quel format" mais **qui possède le fichier de log**.
+The first question is not "which format" but **who owns the log file**.
 
-| Contexte d'exécution | Le process écrit sur | Qui fait la rotation |
+| Execution context | The process writes to | Who handles rotation |
 |---|---|---|
-| Conteneur | stdout / stderr, rien d'autre | Le runtime |
-| Service systemd | stdout / stderr | journald |
-| Script cron ou one-shot | stdout / stderr, redirigés par l'appelant | L'appelant ou logrotate |
-| Binaire legacy non modifiable | Son fichier | logrotate |
+| Container | stdout / stderr, nothing else | The runtime |
+| systemd service | stdout / stderr | journald |
+| Cron or one-shot script | stdout / stderr, redirected by the caller | The caller or logrotate |
+| Legacy binary that cannot be modified | Its own file | logrotate |
 
-**Règle :** une application sous orchestrateur n'ouvre pas de fichier et ne gère pas sa rotation. Le contrat des flux est celui de `bash-script-builder` : stdout les données, stderr les diagnostics. Un log est un diagnostic.
+**Rule:** an application under an orchestrator does not open a file and does not manage its rotation. The stream contract is the one from `bash-script-builder`: stdout for data, stderr for diagnostics. A log is a diagnostic.
 
-### Garder une trace fichier d'un run
+### Keeping a file record of a run
 
-Le fichier est **opt-in** (`LOG_FILE=chemin`), jamais imposé par défaut. Ce qui est bien de faire :
+The file is **opt-in** (`LOG_FILE=path`), never imposed by default. Good practice:
 
-| Pratique | Raison |
+| Practice | Reason |
 |---|---|
-| Ouvrir en **append** | Une troncature efface l'historique, dont le run qui vient d'échouer |
-| **Horodater** dans le fichier, pas à l'écran | L'écran se lit en direct, le fichier se corrèle à un incident |
-| **Retirer les codes ANSI** | Sinon illisible et ingrat à grepper |
-| **En-tête de run** : date UTC, script, PID | Sépare les exécutions et sert d'identifiant de corrélation |
-| **`umask 077`, permissions 600** | Le journal nomme des ressources, des comptes, des adresses |
-| **Créer le répertoire parent** | Sinon échec sur le chemin fourni par l'utilisateur |
-| **Drainer avant de sortir** | Avec `tee`, la fin du run manque si le shell part avant les sinks |
-| **Chaîner le trap EXIT** | Bash n'en garde qu'un : le suivant écrase silencieusement le précédent |
+| Open in **append** mode | Truncation erases the history, including the run that just failed |
+| **Timestamp** in the file, not on screen | The screen is read live, the file is correlated with an incident |
+| **Strip ANSI codes** | Otherwise unreadable and painful to grep |
+| **Run header**: UTC date, script, PID | Separates executions and serves as a correlation identifier |
+| **`umask 077`, permissions 600** | The log names resources, accounts, addresses |
+| **Create the parent directory** | Otherwise it fails on the path supplied by the user |
+| **Drain before exiting** | With `tee`, the end of the run is missing if the shell exits before the sinks |
+| **Chain the EXIT trap** | Bash keeps only one: the next one silently overwrites the previous one |
 
-Le fichier reçoit les deux flux, mais **stdout et stderr restent séparés** à l'écran. Et ceci ne dispense pas d'une rotation, voir la section 4.
+The file receives both streams, but **stdout and stderr stay separate** on screen. And this does not remove the need for rotation, see section 4.
 
-## 2. Niveaux : la règle du destinataire
+## 2. Levels: the recipient rule
 
-Choisir le niveau selon qui doit réagir. Côté console, `fatal:` et `unreachable:` portent ERROR, `[WARNING]:` porte WARN, `TASK`, les issues et l'indentation portent INFO.
+Choose the level according to who must react. On the console side, `fatal:` and `unreachable:` carry ERROR, `[WARNING]:` carries WARN, `TASK`, outcomes and indentation carry INFO.
 
-| Niveau | Destinataire | Test de validation |
+| Level | Recipient | Validation test |
 |---|---|---|
-| ERROR | Une astreinte, potentiellement de nuit | Si personne ne doit être réveillé, ce n'est pas ERROR |
-| WARN | Quelqu'un qui relit les logs demain matin | Dégradation absorbée, mais anormale |
-| INFO | Une enquête post-incident | Transitions d'état, pas les boucles |
-| DEBUG | Le développeur, en local | Désactivé en production par défaut |
+| ERROR | An on-call engineer, potentially at night | If nobody needs to be woken up, it is not ERROR |
+| WARN | Someone rereading the logs tomorrow morning | Absorbed degradation, but abnormal |
+| INFO | A post-incident investigation | State transitions, not loops |
+| DEBUG | The developer, locally | Disabled in production by default |
 
-- **Une erreur rattrapée et relancée est loguée deux fois.** Loguer à l'endroit où l'on décide quoi faire, propager ailleurs.
-- **ERROR dans une boucle de retry** : le collecteur reçoit des milliers de lignes et l'alerte devient inexploitable. Loguer WARN sur chaque tentative, ERROR une seule fois à l'abandon.
+- **An error caught and rethrown is logged twice.** Log where you decide what to do, propagate elsewhere.
+- **ERROR in a retry loop**: the collector receives thousands of lines and the alert becomes unusable. Log WARN on each attempt, ERROR only once when giving up.
 
-Le niveau doit se changer **sans redéploiement** : variable d'environnement lue au démarrage au minimum, endpoint d'administration si le service est long à redémarrer.
+The level must be changeable **without redeployment**: an environment variable read at startup at minimum, an admin endpoint if the service is slow to restart.
 
-## 3. Secrets et données personnelles
+## 3. Secrets and personal data
 
-Le point le plus coûteux à corriger : un secret logué est répliqué, indexé et sauvegardé.
+The most expensive point to fix: a logged secret is replicated, indexed and backed up.
 
-- **Filtrer à l'émission, pas à l'ingestion.** Une allowlist de champs autorisés tient mieux dans le temps qu'une denylist de champs interdits.
-- **Ne jamais loguer un objet entier** (requête HTTP, réponse d'API, structure de config). C'est le vecteur numéro un de fuite de token.
-- **`Authorization`, `Cookie`, `Set-Cookie`** et les corps de requête d'authentification sont exclus par défaut.
-- **Une URL contient des secrets** dans sa query string. Loguer le chemin, pas l'URL complète.
-- **Données personnelles** : loguer un identifiant interne, pas un email ni un nom. La rétention des logs devient sinon un sujet RGPD.
+- **Filter at emission, not at ingestion.** An allowlist of permitted fields holds up better over time than a denylist of forbidden fields.
+- **Never log an entire object** (HTTP request, API response, config structure). It is the number one vector for token leaks.
+- **`Authorization`, `Cookie`, `Set-Cookie`** and authentication request bodies are excluded by default.
+- **A URL contains secrets** in its query string. Log the path, not the full URL.
+- **Personal data**: log an internal identifier, not an email or a name. Otherwise log retention becomes a GDPR issue.
 
-Si un secret a déjà été logué, le traiter comme compromis : révocation et rotation, pas seulement suppression de la ligne.
+If a secret has already been logged, treat it as compromised: revocation and rotation, not just deleting the line.
 
-## 4. Rotation et rétention
+## 4. Rotation and retention
 
-| Décision | Valeur de départ raisonnable |
+| Decision | Reasonable starting value |
 |---|---|
-| Taille max d'un fichier | 100 Mo |
-| Nombre de fichiers conservés | 5 à 10 |
-| Rétention chaude (recherche rapide) | 7 à 15 jours |
-| Rétention froide (archive) | 90 jours, davantage si contrainte légale |
-| Compression | Oui, sauf sur le fichier courant |
+| Max file size | 100 MB |
+| Number of files kept | 5 to 10 |
+| Hot retention (fast search) | 7 to 15 days |
+| Cold retention (archive) | 90 days, more if legally required |
+| Compression | Yes, except on the current file |
 
-Piège `logrotate` : **`copytruncate` perd les lignes écrites entre la copie et la troncature**, et ne corrige rien si le process garde le descripteur ouvert. Préférer un signal de réouverture (`postrotate` avec `kill -HUP` ou `systemctl reload`), et ne garder `copytruncate` que si le process ne sait pas rouvrir son fichier.
+`logrotate` trap: **`copytruncate` loses the lines written between the copy and the truncation**, and fixes nothing if the process keeps the descriptor open. Prefer a reopen signal (`postrotate` with `kill -HUP` or `systemctl reload`), and keep `copytruncate` only if the process cannot reopen its file.
 
-## Spécificités par techno
+## Technology specifics
 
 ### Ansible
 
-La doc officielle de référence est l'annexe [Logging Ansible output](https://docs.ansible.com/projects/ansible/latest/reference_appendices/logging.html).
+The official reference doc is the appendix [Logging Ansible output](https://docs.ansible.com/projects/ansible/latest/reference_appendices/logging.html).
 
-- `log_path` dans `ansible.cfg` : un journal unique sur le nœud de contrôle. Fichier non tourné par défaut, prévoir logrotate.
-- `no_target_syslog` et `syslog_facility` : un journal par machine gérée, à la place.
-- **`no_log: true` sur toute tâche qui manipule un secret.** Attention, il ne couvre pas la sortie de `debug`, donc ne pas débugger un playbook en production.
-- `display_args_to_stdout` : ajoute les valeurs des variables dans la sortie, utile pour distinguer des tâches identiques dans une boucle.
-- Callback plugins : `log_plays` écrit les événements dans un fichier, `mail` notifie sur échec, `profile_tasks` chronomètre. Les activer via `callbacks_enabled` dans `ansible.cfg`.
-- Le mot de passe Vault ne passe jamais en argument de ligne de commande, il finit dans l'historique shell et dans les logs du CI.
+- `log_path` in `ansible.cfg`: a single log on the control node. The file is not rotated by default, plan for logrotate.
+- `no_target_syslog` and `syslog_facility`: one log per managed machine, instead.
+- **`no_log: true` on every task that handles a secret.** Beware, it does not cover `debug` output, so do not debug a playbook in production.
+- `display_args_to_stdout`: adds variable values to the output, useful for telling identical tasks apart in a loop.
+- Callback plugins: `log_plays` writes events to a file, `mail` notifies on failure, `profile_tasks` times tasks. Enable them via `callbacks_enabled` in `ansible.cfg`.
+- The Vault password is never passed as a command-line argument, it ends up in the shell history and in the CI logs.
 
 ### systemd
 
-- `StandardOutput=journal`, lecture avec `journalctl -u <unité> -o json`.
-- `SystemMaxUse=` dans `journald.conf` borne la place occupée, sinon journald prend jusqu'à 10 % du système de fichiers.
+- `StandardOutput=journal`, read with `journalctl -u <unit> -o json`.
+- `SystemMaxUse=` in `journald.conf` caps the space used, otherwise journald takes up to 10% of the file system.
 
 ### CI/CD
 
-- Les secrets sont masqués par la plateforme uniquement s'ils sont déclarés comme tels. Une valeur dérivée (encodée en base64, concaténée) n'est plus masquée.
-- Ne pas activer la verbosité maximale (`-vvv` Ansible, `set -x`, `CI_DEBUG_TRACE`) sur une exécution qui manipule des identifiants.
-- Les logs de job ont une rétention courte : archiver en artefact ce qui doit servir à un post-mortem.
+- Secrets are masked by the platform only if they are declared as such. A derived value (base64-encoded, concatenated) is no longer masked.
+- Do not enable maximum verbosity (Ansible `-vvv`, `set -x`, `CI_DEBUG_TRACE`) on a run that handles credentials.
+- Job logs have a short retention: archive as an artifact whatever must serve a post-mortem.
 
 ## Anti-patterns
 
-| Anti-pattern | Conséquence | Correction |
+| Anti-pattern | Consequence | Fix |
 |---|---|---|
-| Loguer l'objet requête ou réponse entier | Fuite de tokens et de données personnelles | Allowlist de champs |
-| `copytruncate` par défaut | Lignes perdues à chaque rotation | Signal de réouverture en `postrotate` |
-| DEBUG laissé actif en production | Volume, coût, secrets exposés | Niveau piloté par variable d'environnement |
-| Horodatage en heure locale | Corrélation impossible entre régions | ISO 8601 UTC avec millisecondes |
-| Marqueurs maison inventés à chaque projet | Chaque log se relit différemment | Le contrat Ansible de `makefile-builder`, sans exception |
-| Tronquer le fichier de log au démarrage | Perte de l'historique, y compris du run qui a échoué | Ouverture en append |
-| `trap ... EXIT` posé sans chaînage | Le nettoyage précédent est écrasé silencieusement | Chaîner sur le trap existant |
+| Logging the entire request or response object | Token and personal data leaks | Field allowlist |
+| `copytruncate` by default | Lines lost at every rotation | Reopen signal in `postrotate` |
+| DEBUG left active in production | Volume, cost, exposed secrets | Level driven by an environment variable |
+| Timestamps in local time | Correlation impossible across regions | ISO 8601 UTC with milliseconds |
+| Home-made markers invented for each project | Every log reads differently | The Ansible contract from `makefile-builder`, no exceptions |
+| Truncating the log file at startup | Loss of history, including the run that failed | Open in append mode |
+| `trap ... EXIT` set without chaining | The previous cleanup is silently overwritten | Chain onto the existing trap |
 
-## Checklist de revue
+## Review checklist
 
-1. La sortie console respecte le contrat Ansible (TASK, issues nommées d'après l'outil, PLAY RECAP), couleurs désactivables.
-2. La destination est cohérente avec le contexte d'exécution, et le process ne possède pas de fichier qu'il ne devrait pas posséder.
-3. Si un collecteur ingère, le format est structuré, une ligne par événement, horodatage UTC.
-4. Les niveaux respectent la règle du destinataire, et sont pilotables sans redéploiement.
-5. Aucun secret ni donnée personnelle ne peut atteindre la sortie, filtrage à l'émission.
-6. Rotation et rétention définies, y compris sur le driver du runtime.
-7. Un identifiant de corrélation traverse les services ou les runs.
-8. L'indisponibilité du collecteur ne dégrade pas le service.
+1. Console output follows the Ansible contract (TASK, outcomes named after the tool, PLAY RECAP), and colors can be disabled.
+2. The destination is consistent with the execution context, and the process does not own a file it should not own.
+3. If a collector ingests, the format is structured, one line per event, UTC timestamp.
+4. Levels follow the recipient rule, and can be controlled without redeployment.
+5. No secret or personal data can reach the output, filtering happens at emission.
+6. Rotation and retention are defined, including on the runtime driver.
+7. A correlation identifier crosses services or runs.
+8. Collector unavailability does not degrade the service.
 
-## Les autres signaux
+## The other signals
 
-Un log dit ce qui s'est passé pour un cas précis. Pour « combien et à quelle vitesse », voir `metrics-setup`. Pour « où le temps est parti entre les services », voir `tracing-setup`. Le champ `trace_id` est ce qui relie les trois.
+A log says what happened for a specific case. For "how many and how fast", see `metrics-setup`. For "where the time went between services", see `tracing-setup`. The `trace_id` field is what links the three.
 
-## Service avec collecteur
+## Service with a collector
 
-Dès que les logs partent vers un collecteur (application longue durée, conteneur, agrégation centralisée), lire `collecte.md` dans ce dossier : format JSON structuré, corrélation, agrégation, conteneurs et Kubernetes.
+As soon as logs go to a collector (long-running application, container, centralized aggregation), read `collecte.md` in this folder: structured JSON format, correlation, aggregation, containers and Kubernetes.

@@ -1,4 +1,4 @@
-# Sécurité : ne jamais commit de secrets ou données de session
+# Security: never commit secrets or session data
 .credentials.json
 *credentials*
 history.jsonl

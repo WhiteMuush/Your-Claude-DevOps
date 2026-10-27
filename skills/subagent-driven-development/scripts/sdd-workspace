@@ -4,7 +4,7 @@
 # progress ledger. Print the directory's absolute path.
 #
 # The workspace lives in the working tree (not under .git/) because Claude Code
-# treats .git/ as a protected path and denies agent writes there — which blocks
+# treats .git/ as a protected path and denies agent writes there, which blocks
 # an implementer subagent from writing its report file. A self-ignoring
 # .gitignore keeps the workspace out of `git status` and out of accidental
 # commits without modifying any tracked file.

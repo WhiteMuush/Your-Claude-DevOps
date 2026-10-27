@@ -1,71 +1,71 @@
 ---
 name: terraform-guide
-description: Guide Terraform pour l'Infrastructure as Code, modules, state management, workspaces et bonnes pratiques. À utiliser quand l'utilisateur écrit du Terraform, conçoit des modules ou gère de l'infrastructure cloud. Se déclenche aussi avec "terraform", "infrastructure as code", "terraform plan", "terraform apply", "module terraform", "tfstate", "HCL".
+description: Terraform guide for Infrastructure as Code, modules, state management, workspaces and best practices. Use when the user writes Terraform, designs modules or manages cloud infrastructure. Also triggers on "terraform", "infrastructure as code", "terraform plan", "terraform apply", "terraform module", "tfstate", "HCL".
 ---
 
-# Guide Terraform
+# Terraform guide
 
-## 1. Workflow opérationnel (étapes numérotées)
+## 1. Operational workflow (numbered steps)
 
-1. **Initialiser**, configurer le backend et télécharger les providers.
+1. **Initialize**, configure the backend and download the providers.
    ```bash
-   terraform init -upgrade          # première fois ou mise à jour providers
-   terraform init -reconfigure      # changer de backend sans migrer l'état
+   terraform init -upgrade          # first time or provider update
+   terraform init -reconfigure      # change backend without migrating the state
    ```
-2. **Valider**, vérifier la syntaxe avant de planifier.
+2. **Validate**, check the syntax before planning.
    ```bash
    terraform validate
-   terraform fmt -recursive         # formater tout le répertoire
+   terraform fmt -recursive         # format the whole directory
    ```
-3. **Planifier**, toujours sauvegarder le plan pour un apply déterministe.
+3. **Plan**, always save the plan for a deterministic apply.
    ```bash
    terraform plan -out=tfplan.bin
    terraform show -json tfplan.bin | jq '.resource_changes[] | select(.change.actions != ["no-op"])'
    ```
-4. **Appliquer**, uniquement depuis le plan sauvegardé.
+4. **Apply**, only from the saved plan.
    ```bash
    terraform apply tfplan.bin
    ```
-5. **Vérifier le drift**, détecter les divergences entre state et réalité.
+5. **Check for drift**, detect divergences between state and reality.
    ```bash
-   terraform plan -refresh-only     # voir ce qui a changé hors Terraform
-   terraform apply -refresh-only    # re-synchroniser le state sans modifier les ressources
+   terraform plan -refresh-only     # see what changed outside Terraform
+   terraform apply -refresh-only    # resync the state without modifying resources
    ```
-6. **Détruire proprement**, cibler d'abord, jamais en masse sans review.
+6. **Destroy cleanly**, target first, never in bulk without review.
    ```bash
    terraform destroy -target=module.networking.azurerm_subnet.main
    ```
 
 ---
 
-## 2. Structure de projet recommandée
+## 2. Recommended project structure
 
 ```
 infrastructure/
 ├── environments/
 │   ├── dev/
-│   │   ├── main.tf          # appels aux modules
+│   │   ├── main.tf          # module calls
 │   │   ├── variables.tf
 │   │   ├── terraform.tfvars
 │   │   └── backend.tf
 │   ├── staging/
 │   └── production/
 ├── modules/
-│   ├── networking/          # un module = une responsabilité
+│   ├── networking/          # one module = one responsibility
 │   │   ├── main.tf
 │   │   ├── variables.tf
 │   │   └── outputs.tf
 │   ├── database/
 │   └── app-service/
 └── shared/
-    └── versions.tf          # contraintes de version providers
+    └── versions.tf          # provider version constraints
 ```
 
-**Critère de découpage** : un module par "domaine fonctionnel" (réseau, stockage, compute). Éviter les modules à 1 ressource (sur-découpage) et les modules "tout en un" (couplage fort).
+**Splitting criterion**: one module per "functional domain" (network, storage, compute). Avoid 1-resource modules (over-splitting) and "all-in-one" modules (tight coupling).
 
 ---
 
-## 3. Module réutilisable, exemple complet
+## 3. Reusable module, complete example
 
 ```hcl
 # modules/app-service/variables.tf
@@ -74,7 +74,7 @@ variable "environment"        {
   type    = string
   validation {
     condition     = contains(["dev", "staging", "production"], var.environment)
-    error_message = "Valeurs acceptées : dev, staging, production."
+    error_message = "Accepted values: dev, staging, production."
   }
 }
 variable "sku"                { type = string; default = "B1" }
@@ -121,7 +121,7 @@ output "app_id"      { value = azurerm_linux_web_app.this.id }
 output "plan_id"     { value = azurerm_service_plan.this.id }
 ```
 
-Appel depuis un environnement :
+Call from an environment:
 ```hcl
 module "api" {
   source              = "../../modules/app-service"
@@ -137,7 +137,7 @@ module "api" {
 
 ## 4. State management
 
-### Backend distant avec locking (Azure)
+### Remote backend with locking (Azure)
 ```hcl
 # environments/production/backend.tf
 terraform {
@@ -146,12 +146,12 @@ terraform {
     storage_account_name = "stterraformstprod"
     container_name       = "tfstate"
     key                  = "myapp.production.tfstate"
-    use_azuread_auth     = true   # évite les clés de compte (2025+)
+    use_azuread_auth     = true   # avoids account keys (2025+)
   }
 }
 ```
 
-### Backend S3 + DynamoDB (AWS)
+### S3 + DynamoDB backend (AWS)
 ```hcl
 terraform {
   backend "s3" {
@@ -159,29 +159,29 @@ terraform {
     key            = "myapp/production/terraform.tfstate"
     region         = "eu-west-1"
     encrypt        = true
-    use_lockfile   = true   # verrouillage natif S3 (Terraform 1.10+)
+    use_lockfile   = true   # native S3 locking (Terraform 1.10+)
   }
 }
 ```
 
-> `dynamodb_table` est déprécié depuis Terraform 1.11 : le verrouillage passe désormais par un
-> fichier de lock dans le bucket lui-même. Une table DynamoDB de moins à provisionner et à payer.
+> `dynamodb_table` has been deprecated since Terraform 1.11: locking now goes through a
+> lock file in the bucket itself. One less DynamoDB table to provision and pay for.
 
-### Commandes de gestion du state
+### State management commands
 ```bash
-terraform state list                              # toutes les ressources
-terraform state show azurerm_linux_web_app.this   # détail d'une ressource
-terraform state mv  module.old.res module.new.res # renommer sans recréer
-terraform state rm  azurerm_resource_group.legacy # retirer du state sans détruire
+terraform state list                              # all resources
+terraform state show azurerm_linux_web_app.this   # details of one resource
+terraform state mv  module.old.res module.new.res # rename without recreating
+terraform state rm  azurerm_resource_group.legacy # remove from state without destroying
 terraform import    azurerm_resource_group.legacy /subscriptions/.../rg-name
 ```
 
 ---
 
-## 5. Versions et contraintes providers
+## 5. Provider versions and constraints
 
 ```hcl
-# shared/versions.tf, à copier dans chaque environnement
+# shared/versions.tf, to copy into each environment
 terraform {
   required_version = ">= 1.7, < 2.0"
   required_providers {
@@ -197,28 +197,28 @@ terraform {
 }
 ```
 
-Verrouiller le `.terraform.lock.hcl` dans Git, il garantit la reproductibilité des builds.
+Lock the `.terraform.lock.hcl` in Git, it guarantees reproducible builds.
 
-> **Migration 3.x → 5.x** : azurerm a passé deux majeures depuis la 3. La 4.0 rend `subscription_id`
-> obligatoire dans le bloc provider et remplace `skip_provider_registration` par
-> `resource_provider_registrations`. Ne pas sauter ces deux marches sans lire les guides d'upgrade.
+> **Migration 3.x → 5.x**: azurerm has gone through two major versions since 3. Version 4.0 makes `subscription_id`
+> mandatory in the provider block and replaces `skip_provider_registration` with
+> `resource_provider_registrations`. Do not skip these two steps without reading the upgrade guides.
 
 ---
 
-## 6. Garde-fous et pièges fréquents
+## 6. Guardrails and common pitfalls
 
-| Piège | Symptôme | Remède |
+| Pitfall | Symptom | Remedy |
 |-------|----------|--------|
-| State en local / commité dans Git | Conflits d'équipe, secrets exposés | Backend distant + `.gitignore` sur `*.tfstate*` |
-| `terraform apply` sans plan sauvegardé | Apply incohérent si state a changé entre-temps | Toujours `-out=tfplan.bin` + `apply tfplan.bin` |
-| Hard-coding de secrets dans HCL | Secrets dans Git | `var` + Key Vault / Secrets Manager ou `sensitive = true` |
-| Modules trop fins (1 ressource) | Overhead de composition, appels imbriqués | Regrouper par domaine fonctionnel |
-| `terraform destroy` sans `-target` | Destruction de toute l'infra | Toujours cibler ou utiliser des workspaces isolés |
-| Drift ignoré | État réel diverge du plan | `plan -refresh-only` en CI hebdomadaire |
-| Pas de `lifecycle.prevent_destroy` sur ressources critiques | Suppression accidentelle BDD/stockage | Ajouter `prevent_destroy = true` sur les ressources stateful |
+| Local state / committed to Git | Team conflicts, exposed secrets | Remote backend + `.gitignore` on `*.tfstate*` |
+| `terraform apply` without a saved plan | Inconsistent apply if the state changed in the meantime | Always `-out=tfplan.bin` + `apply tfplan.bin` |
+| Hard-coding secrets in HCL | Secrets in Git | `var` + Key Vault / Secrets Manager or `sensitive = true` |
+| Modules too fine-grained (1 resource) | Composition overhead, nested calls | Group by functional domain |
+| `terraform destroy` without `-target` | Destruction of the whole infra | Always target or use isolated workspaces |
+| Ignored drift | Real state diverges from the plan | Weekly `plan -refresh-only` in CI |
+| No `lifecycle.prevent_destroy` on critical resources | Accidental deletion of database/storage | Add `prevent_destroy = true` on stateful resources |
 
 ```hcl
-# Protéger une base de données critique
+# Protect a critical database
 resource "azurerm_postgresql_flexible_server" "main" {
   # ...
   lifecycle {
@@ -229,15 +229,15 @@ resource "azurerm_postgresql_flexible_server" "main" {
 
 ---
 
-## 7. Bonnes pratiques 2026
+## 7. 2026 best practices
 
-- **Épingler les versions** providers via `.terraform.lock.hcl` (commité dans Git).
-- **Secrets** : ne jamais les mettre dans `.tfvars`; utiliser `sensitive = true` + injection CI (env vars `TF_VAR_*`).
-- **Tagging systématique** : module `locals` avec `common_tags` hérité par toutes les ressources.
-- **Outputs sensibles** : marquer `sensitive = true` pour éviter les logs en clair.
-- **CI/CD** : `terraform plan` en PR (commentaire automatique), `terraform apply` uniquement sur merge main.
-- **Workspaces** : réservés aux environnements éphémères (feature branches), ne pas les utiliser pour prod/staging (préférer des dossiers séparés avec leur propre state).
-- **Tflint + Checkov** : linting et scan de sécurité avant le plan.
+- **Pin provider versions** via `.terraform.lock.hcl` (committed to Git).
+- **Secrets**: never put them in `.tfvars`; use `sensitive = true` + CI injection (`TF_VAR_*` env vars).
+- **Systematic tagging**: `locals` module with `common_tags` inherited by all resources.
+- **Sensitive outputs**: mark them `sensitive = true` to avoid plaintext logs.
+- **CI/CD**: `terraform plan` on PR (automatic comment), `terraform apply` only on merge to main.
+- **Workspaces**: reserved for ephemeral environments (feature branches), do not use them for prod/staging (prefer separate folders with their own state).
+- **Tflint + Checkov**: linting and security scanning before the plan.
   ```bash
   tflint --recursive
   checkov -d . --framework terraform
@@ -245,18 +245,18 @@ resource "azurerm_postgresql_flexible_server" "main" {
 
 ---
 
-## 8. Commandes de référence rapide
+## 8. Quick reference commands
 
 ```bash
 # Init & format
 terraform init -upgrade && terraform fmt -recursive && terraform validate
 
-# Plan sécurisé
+# Safe plan
 terraform plan -var-file=environments/prod.tfvars -out=tfplan.bin
 
-# Inspection du plan
-terraform show tfplan.bin                   # lisible humain
-terraform show -json tfplan.bin | jq '.'   # JSON pour scripts
+# Plan inspection
+terraform show tfplan.bin                   # human readable
+terraform show -json tfplan.bin | jq '.'   # JSON for scripts
 
 # State ops
 terraform state list
@@ -264,7 +264,7 @@ terraform state show <resource_address>
 terraform state mv   <src> <dst>
 terraform state rm   <resource_address>
 
-# Import ressource existante
+# Import an existing resource
 terraform import <resource_address> <cloud_id>
 
 # Drift

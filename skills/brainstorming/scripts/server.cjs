@@ -115,7 +115,7 @@ let ownerPid = process.env.BRAINSTORM_OWNER_PID ? Number(process.env.BRAINSTORM_
 // Per-session secret key. The companion is reachable by any local browser tab
 // and, when bound to a non-loopback host, by any host that can route to it.
 // The key authenticates the real client uniformly across loopback, tunnel, and
-// remote binds — and defeats DNS rebinding — where a Host/Origin allowlist
+// remote binds (and defeats DNS rebinding), where a Host/Origin allowlist
 // cannot. It rides the served URL as ?key= and is mirrored into a cookie on
 // first load so same-origin subresources and the WebSocket carry it for free.
 // Persisted alongside the port (BRAINSTORM_TOKEN_FILE) so a restart keeps the
@@ -420,7 +420,7 @@ function handleRequest(req, res) {
   } else if (req.method === 'GET' && pathname.startsWith('/files/')) {
     const fileName = path.basename(pathname.slice(7));
     const filePath = path.join(CONTENT_DIR, fileName);
-    // Reject empty/dotfile names and anything that isn't a regular file —
+    // Reject empty/dotfile names and anything that isn't a regular file:
     // `/files/` would otherwise resolve to CONTENT_DIR and crash readFileSync (EISDIR).
     if (!fileName || fileName.startsWith('.') || !isRegularFileInsideContentDir(filePath)) {
       res.writeHead(404, securityHeaders());
@@ -666,7 +666,7 @@ function startServer() {
     // cookie in the shared localhost jar.
     COOKIE_NAME = 'brainstorm-key-' + PORT;
     // Record the bound port AND token so the next restart of this session reuses
-    // them — but ONLY when we got our preferred port. On a fallback we bound a
+    // them, but ONLY when we got our preferred port. On a fallback we bound a
     // *different* port because someone else holds the preferred one; persisting
     // would overwrite the shared files and strand that other session's open tab.
     if (PORT_FILE && !triedFallback) {
@@ -684,7 +684,7 @@ function startServer() {
       screen_dir: CONTENT_DIR, state_dir: STATE_DIR, idle_timeout_ms: IDLE_TIMEOUT_MS
     });
     console.log(info);
-    // server-info embeds the key — keep it owner-only.
+    // server-info embeds the key, so keep it owner-only.
     fs.writeFileSync(path.join(STATE_DIR, 'server-info'), info + '\n', { mode: 0o600 });
   }
 

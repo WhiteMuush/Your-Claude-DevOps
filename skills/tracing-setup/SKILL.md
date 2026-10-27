@@ -1,110 +1,110 @@
 ---
 name: tracing-setup
-description: Mise en place du tracing distribué avec OpenTelemetry, propagation du contexte W3C traceparent, nommage et découpage des spans, attributs, gestion des erreurs, échantillonnage head et tail, corrélation avec les logs et les métriques. Se déclenche avec "trace", "tracing", "traces distribuées", "OpenTelemetry", "OTel", "span", "traceparent", "trace_id", "échantillonnage", "sampling", "Jaeger", "Tempo", "latence entre services", "observabilité".
+description: Use when setting up distributed tracing with OpenTelemetry, W3C traceparent context propagation, span naming and granularity, attributes, error handling, head and tail sampling, correlation with logs and metrics. Triggers on "trace", "tracing", "distributed traces", "OpenTelemetry", "OTel", "span", "traceparent", "trace_id", "sampling", "trace sampling", "Jaeger", "Tempo", "latency between services", "observability".
 ---
 
-# Tracing distribué
+# Distributed tracing
 
-## Ce que ce skill n'enseigne pas
+## What this skill does not teach
 
-Déployer un collecteur OpenTelemetry, configurer un backend Jaeger ou Tempo, lire une cascade dans une interface : ce sont des tâches d'outillage bien documentées. Ici on décide **ce qu'on trace, comment on le nomme et ce qu'on garde**.
+Deploying an OpenTelemetry collector, configuring a Jaeger or Tempo backend, reading a waterfall in a UI: these are well-documented tooling tasks. Here we decide **what to trace, how to name it and what to keep**.
 
-La règle de base : **le tracing répond à "où le temps est parti", pas à "combien" ni à "quoi exactement".** Ces deux questions appartiennent à `metrics-setup` et `logging-setup`.
+The basic rule: **tracing answers "where did the time go", not "how many" or "what exactly".** Those two questions belong to `metrics-setup` and `logging-setup`.
 
-## La propagation d'abord, tout le reste ensuite
+## Propagation first, everything else after
 
-**Une trace interrompue ne vaut rien.** Un span orphelin est pire qu'une absence de trace : il donne l'illusion d'une couverture. C'est le seul point à valider avant d'investir dans le nommage ou les attributs.
+**A broken trace is worthless.** An orphan span is worse than no trace at all: it gives the illusion of coverage. It is the only point to validate before investing in naming or attributes.
 
-Le contexte voyage dans l'en-tête **W3C `traceparent`** (format standard, à préférer aux formats propriétaires). Il doit traverser :
+The context travels in the **W3C `traceparent`** header (standard format, to be preferred over proprietary formats). It must cross:
 
-| Frontière | Point de vigilance |
+| Boundary | Point of attention |
 |---|---|
-| Appel HTTP sortant | Le client instrumenté injecte l'en-tête. Un client construit à la main ne le fait pas |
-| Message en file | Le contexte se met dans les **en-têtes du message**, pas dans son corps métier |
-| Job asynchrone ou batch | Le contexte du producteur doit être sérialisé avec la tâche, sinon la trace s'arrête à l'enqueue |
-| Passerelle, proxy, load balancer | Vérifier que l'en-tête est transmis et non filtré |
-| Frontière d'équipe ou de prestataire | Se mettre d'accord sur le format en amont, pas après |
+| Outgoing HTTP call | The instrumented client injects the header. A hand-built client does not |
+| Queued message | The context goes in the **message headers**, not in its business body |
+| Asynchronous or batch job | The producer's context must be serialized with the task, otherwise the trace stops at the enqueue |
+| Gateway, proxy, load balancer | Check that the header is forwarded and not filtered |
+| Team or vendor boundary | Agree on the format upfront, not afterwards |
 
-Test de validation : prendre un `trace_id` réel et vérifier qu'il apparaît **dans tous les services traversés**. Tant que ce test échoue, ne pas affiner le reste.
+Validation test: take a real `trace_id` and check that it appears **in every service it crosses**. As long as this test fails, do not refine the rest.
 
-## Nommage et découpage des spans
+## Span naming and granularity
 
-Le nom d'un span est **à faible cardinalité**, comme un nom de métrique. Ce qui varie va dans les attributs.
+A span name is **low cardinality**, like a metric name. Whatever varies goes into the attributes.
 
 ```
 GET /orders/{id}          correct
-GET /orders/48213         faux, un nom de span par commande
+GET /orders/48213         wrong, one span name per order
 db.query orders           correct
-SELECT * FROM orders ...  faux, et fuite potentielle de données
+SELECT * FROM orders ...  wrong, and a potential data leak
 ```
 
-Que découper :
+What to split into spans:
 
-- **Une frontière de processus** : requête entrante, appel sortant, publication ou consommation de message. Non négociable.
-- **Une opération d'entrée-sortie** : requête base de données, appel de cache, lecture de fichier volumineux.
-- **Un bloc de calcul significatif**, seulement s'il est soupçonné de coûter du temps.
+- **A process boundary**: incoming request, outgoing call, message publication or consumption. Non-negotiable.
+- **An input/output operation**: database query, cache call, reading a large file.
+- **A significant block of computation**, only if it is suspected of costing time.
 
-Ce qu'il ne faut pas découper : chaque fonction. Une trace à 400 spans est illisible, coûteuse, et ne dit rien de plus qu'une trace à 20 spans bien placés. Le découpage se resserre là où une enquête a réellement manqué d'information.
+What not to split: every function. A 400-span trace is unreadable, expensive, and says nothing more than a trace with 20 well-placed spans. Granularity gets finer where an investigation actually lacked information.
 
-Suivre les **conventions sémantiques OpenTelemetry** pour les attributs standard (`http.request.method`, `server.address`, `db.system`). Un attribut maison là où une convention existe coûte la compatibilité avec tout l'outillage.
+Follow the **OpenTelemetry semantic conventions** for standard attributes (`http.request.method`, `server.address`, `db.system`). A home-made attribute where a convention exists costs compatibility with all the tooling.
 
-## Attributs, événements, erreurs
+## Attributes, events, errors
 
-- **Les attributs décrivent le span**, les événements horodatent un fait à l'intérieur. Une exception est un événement, pas un attribut.
-- **Un span en échec porte un statut d'erreur explicite.** Sans cela, il est compté comme réussi dans toutes les statistiques dérivées.
-- **L'erreur est marquée là où elle est traitée**, pas à chaque niveau qui la relaie. Sinon une seule panne apparaît comme dix.
-- Les mêmes interdits que pour les logs s'appliquent aux attributs : **pas de secret, pas de jeton, pas de donnée personnelle, pas de corps de requête entier**. Les traces sont exportées vers un backend tiers, souvent moins protégé que les logs.
-- Une requête SQL en attribut expose les valeurs. Loguer l'opération et la table, pas la requête complète.
+- **Attributes describe the span**, events timestamp a fact inside it. An exception is an event, not an attribute.
+- **A failed span carries an explicit error status.** Without it, it is counted as successful in every derived statistic.
+- **The error is marked where it is handled**, not at every level that relays it. Otherwise a single failure shows up as ten.
+- The same prohibitions as for logs apply to attributes: **no secret, no token, no personal data, no entire request body**. Traces are exported to a third-party backend, often less protected than logs.
+- An SQL query as an attribute exposes the values. Log the operation and the table, not the full query.
 
-## Échantillonnage
+## Sampling
 
-Tout tracer coûte trop cher, ne rien tracer ne sert à rien. La décision se prend explicitement.
+Tracing everything costs too much, tracing nothing is useless. The decision is made explicitly.
 
-| Stratégie | Principe | Quand |
+| Strategy | Principle | When |
 |---|---|---|
-| **Head-based** | La décision est prise au début, à la racine, et propagée | Défaut simple, volume prévisible |
-| **Tail-based** | Le collecteur garde la trace complète une fois terminée, selon ce qui s'y est passé | Quand on veut 100 % des erreurs et des traces lentes |
-| **Parent-based** | Un service suit la décision reçue de son parent | À activer partout, quelle que soit la stratégie |
+| **Head-based** | The decision is made at the start, at the root, and propagated | Simple default, predictable volume |
+| **Tail-based** | The collector keeps the complete trace once finished, based on what happened in it | When you want 100% of errors and slow traces |
+| **Parent-based** | A service follows the decision received from its parent | To be enabled everywhere, whatever the strategy |
 
-Deux règles :
+Two rules:
 
-- **La décision doit être cohérente sur toute la trace.** Si chaque service décide pour lui-même, on obtient des traces à trous, inexploitables. D'où `parent-based` partout.
-- **Garder tout ce qui est anormal** : erreurs et latences hautes échantillonnées à 100 %, trafic nominal échantillonné bas. C'est l'argument principal du tail-based, qui coûte en mémoire au collecteur.
+- **The decision must be consistent across the whole trace.** If each service decides for itself, you get traces with holes, unusable. Hence `parent-based` everywhere.
+- **Keep everything abnormal**: errors and high latencies sampled at 100%, nominal traffic sampled low. This is the main argument for tail-based, which costs memory on the collector.
 
-Un taux de 1 à 10 % sur le trafic nominal suffit presque toujours pour du diagnostic.
+A rate of 1 to 10% on nominal traffic is almost always enough for diagnostics.
 
-## Corrélation entre les trois signaux
+## Correlation between the three signals
 
-C'est ce qui transforme trois outils séparés en une chaîne d'enquête.
+This is what turns three separate tools into an investigation chain.
 
-1. **Injecter `trace_id` et `span_id` dans chaque ligne de log** émise dans le contexte d'un span. Le parcours devient : alerte sur métrique, puis trace lente, puis logs exacts de cette trace.
-2. **Exemplars** : attacher un `trace_id` à un point de métrique permet de sauter d'un pic de latence à une trace réelle de ce pic.
-3. Le même identifiant de corrélation traverse donc les trois signaux. Sans lui, chaque outil se fouille à la main.
+1. **Inject `trace_id` and `span_id` into every log line** emitted within a span's context. The path becomes: alert on a metric, then slow trace, then the exact logs of that trace.
+2. **Exemplars**: attaching a `trace_id` to a metric point lets you jump from a latency spike to a real trace of that spike.
+3. The same correlation identifier therefore crosses all three signals. Without it, each tool has to be searched by hand.
 
-Voir `logging-setup` pour le champ `trace_id` côté logs, et `metrics-setup` pour la répartition des rôles.
+See `logging-setup` for the `trace_id` field on the logs side, and `metrics-setup` for the division of roles.
 
 ## Anti-patterns
 
-| Anti-pattern | Conséquence | Correction |
+| Anti-pattern | Consequence | Fix |
 |---|---|---|
-| Propagation cassée sur une frontière | Traces orphelines, illusion de couverture | Valider un `trace_id` de bout en bout |
-| Contexte dans le corps du message | Couplage métier, oublié par les autres producteurs | En-têtes du message |
-| Identifiant dans le nom du span | Cardinalité ingérable côté backend | Nom templatisé, identifiant en attribut |
-| Un span par fonction | Traces illisibles, coût élevé | Frontières de processus et entrées-sorties |
-| Erreur marquée à chaque niveau | Une panne compte pour dix | Marquer là où elle est traitée |
-| Statut d'erreur non positionné | Le span en échec passe pour un succès | Statut explicite plus événement d'exception |
-| Requête SQL ou corps entier en attribut | Fuite de données vers un backend tiers | Opération et table seulement |
-| Échantillonnage décidé par service | Traces à trous | `parent-based` partout |
-| Échantillonnage uniforme | Les incidents rares ne sont jamais capturés | 100 % des erreurs et des traces lentes |
-| Aucun `trace_id` dans les logs | Aucun lien entre les signaux | Injecter le contexte dans le logger |
+| Propagation broken at a boundary | Orphan traces, illusion of coverage | Validate a `trace_id` end to end |
+| Context in the message body | Business coupling, forgotten by other producers | Message headers |
+| Identifier in the span name | Unmanageable cardinality on the backend | Templated name, identifier as an attribute |
+| One span per function | Unreadable traces, high cost | Process boundaries and inputs/outputs |
+| Error marked at every level | One failure counts as ten | Mark it where it is handled |
+| Error status not set | The failed span looks like a success | Explicit status plus exception event |
+| SQL query or entire body as an attribute | Data leak to a third-party backend | Operation and table only |
+| Sampling decided per service | Traces with holes | `parent-based` everywhere |
+| Uniform sampling | Rare incidents are never captured | 100% of errors and slow traces |
+| No `trace_id` in the logs | No link between the signals | Inject the context into the logger |
 
-## Checklist de revue
+## Review checklist
 
-1. Un `trace_id` réel se retrouve dans tous les services traversés, y compris derrière une file et un job asynchrone.
-2. Les noms de spans sont à faible cardinalité, ce qui varie est en attribut.
-3. Les attributs standard suivent les conventions sémantiques OpenTelemetry.
-4. Aucun secret ni donnée personnelle ne part dans un attribut ou un événement.
-5. Les spans en échec portent un statut d'erreur, marqué une seule fois.
-6. `parent-based` est actif partout et la stratégie d'échantillonnage est écrite quelque part.
-7. Les erreurs et les traces lentes sont conservées intégralement.
-8. `trace_id` et `span_id` apparaissent dans les logs applicatifs.
+1. A real `trace_id` is found in every service crossed, including behind a queue and an asynchronous job.
+2. Span names are low cardinality, whatever varies is an attribute.
+3. Standard attributes follow the OpenTelemetry semantic conventions.
+4. No secret or personal data goes into an attribute or an event.
+5. Failed spans carry an error status, marked only once.
+6. `parent-based` is active everywhere and the sampling strategy is written down somewhere.
+7. Errors and slow traces are kept in full.
+8. `trace_id` and `span_id` appear in the application logs.

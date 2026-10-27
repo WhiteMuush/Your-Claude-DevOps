@@ -82,7 +82,7 @@ The wrapper falls back to the plain `claude` binary when herdr or `jq` is missin
 
 ## Notes
 
-The rules in `CLAUDE.md` and the DevOps skills are written in French, since that is the language of the setup they came from. The structure is language-agnostic, so translating them is a search and replace away.
+Everything in this repository is written in English, including the rules in `CLAUDE.md`, the DevOps skills and the memory templates.
 
 Em dashes were removed throughout, which is a personal formatting preference carried over from `CLAUDE.md`.
 

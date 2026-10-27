@@ -1,13 +1,13 @@
 ---
 name: gitlab-ci-guide
-description: Pipelines GitLab CI/CD, stages, jobs, runners, artifacts, environments et Auto DevOps. Se déclenche avec "GitLab CI", "gitlab-ci.yml", "pipeline GitLab", "runner GitLab", "GitLab CD".
+description: Use when working with GitLab CI/CD pipelines, stages, jobs, runners, artifacts, environments and Auto DevOps. Triggers on "GitLab CI", "gitlab-ci.yml", "GitLab pipeline", "GitLab runner", "GitLab CD".
 ---
 
-# Guide GitLab CI/CD
+# GitLab CI/CD Guide
 
-## 1. Concevoir la structure du pipeline
+## 1. Design the pipeline structure
 
-Définir les stages dans l'ordre d'exécution logique. Les jobs d'un même stage tournent en parallèle ; `needs:` casse cette contrainte pour du DAG.
+Define the stages in logical execution order. Jobs in the same stage run in parallel; `needs:` breaks this constraint for a DAG.
 
 ```yaml
 stages:
@@ -17,14 +17,14 @@ stages:
   - deploy
 ```
 
-**Critères de découpage :**
-- Un stage = une responsabilité (ne pas mélanger build et test).
-- Si un job doit démarrer avant la fin de son stage, utiliser `needs:` (DAG).
-- Limiter à 6-7 stages max, au-delà, refactorer en pipelines enfants.
+**Splitting criteria:**
+- One stage = one responsibility (do not mix build and test).
+- If a job must start before its stage ends, use `needs:` (DAG).
+- Limit to 6-7 stages max, beyond that, refactor into child pipelines.
 
-## 2. Écrire les jobs
+## 2. Write the jobs
 
-Structure minimale d'un job de référence :
+Minimal structure of a reference job:
 
 ```yaml
 build:app:
@@ -46,7 +46,7 @@ build:app:
       - .npm/
 ```
 
-**Règles d'exécution, préférer `rules:` à `only/except`** :
+**Execution rules, prefer `rules:` over `only/except`**:
 
 ```yaml
 deploy:production:
@@ -61,15 +61,15 @@ deploy:production:
     url: https://app.example.com
 ```
 
-## 3. Gérer les runners
+## 3. Manage the runners
 
-| Type | Cas d'usage | Config clé |
+| Type | Use case | Key config |
 |------|------------|------------|
-| Shared runners | CI standard, projets publics | Tags vides ou `saas-linux-*` |
-| Group runners | Équipe partageant des secrets d'infra | `group_runners_enabled: true` |
-| Project runners | Accès réseau interne, GPU, Windows | Runner enregistré avec tag dédié |
+| Shared runners | Standard CI, public projects | Empty tags or `saas-linux-*` |
+| Group runners | Team sharing infra secrets | `group_runners_enabled: true` |
+| Project runners | Internal network access, GPU, Windows | Runner registered with a dedicated tag |
 
-**Enregistrer un runner (GitLab 17+) :**
+**Register a runner (GitLab 17+):**
 ```bash
 gitlab-runner register \
   --url https://gitlab.example.com \
@@ -79,23 +79,23 @@ gitlab-runner register \
   --tag-list "docker,linux,build"
 ```
 
-**Auto-scaling (on-premise) :** utiliser le **GitLab Runner Autoscaler** (Fleeting + Taskscaler), avec les plugins AWS EC2, Google Compute Engine ou Azure. Pour Kubernetes : le runner Helm chart officiel.
+**Auto-scaling (on-premise):** use the **GitLab Runner Autoscaler** (Fleeting + Taskscaler), with the AWS EC2, Google Compute Engine or Azure plugins. For Kubernetes: the official runner Helm chart.
 
-> L'ancien `executor = "docker+machine"` est déprécié depuis GitLab 17.5 et sera retiré en 20.0 (mai 2027) : Docker a abandonné Docker Machine, la brique sur laquelle il reposait. Les configurations `config.toml` qui traînent en ligne l'utilisent encore massivement.
+> The old `executor = "docker+machine"` has been deprecated since GitLab 17.5 and will be removed in 20.0 (May 2027): Docker abandoned Docker Machine, the component it relied on. The `config.toml` configurations found online still use it heavily.
 
-## 4. Cache et artifacts
+## 4. Cache and artifacts
 
 ```yaml
-# Cache partagé entre branches, clé sur fichier de lock
+# Cache shared between branches, key on the lock file
 cache:
   key:
     files:
       - yarn.lock
   paths:
     - node_modules/
-  policy: pull-push   # pull-push par défaut ; "pull" pour jobs read-only
+  policy: pull-push   # pull-push by default; "pull" for read-only jobs
 
-# Artifact de test coverage
+# Test coverage artifact
 test:unit:
   script: pytest --cov=src --cov-report=xml
   artifacts:
@@ -106,35 +106,35 @@ test:unit:
     expire_in: 7 days
 ```
 
-**Règle :** toujours mettre `expire_in` sur les artifacts, sans ça, GitLab conserve par défaut selon la config instance (peut saturer le stockage).
+**Rule:** always set `expire_in` on artifacts, without it, GitLab keeps them by default according to the instance config (can fill up the storage).
 
-**`dependencies: []`** sur les jobs de déploiement pour ne pas télécharger d'artifacts inutiles.
+**`dependencies: []`** on deployment jobs to avoid downloading useless artifacts.
 
-## 5. Pipelines avancés
+## 5. Advanced pipelines
 
-### DAG avec `needs:`
+### DAG with `needs:`
 ```yaml
 test:unit:
   stage: test
-  needs: [build:app]   # démarre dès que build:app est terminé, pas toute la stage build
+  needs: [build:app]   # starts as soon as build:app is done, not the whole build stage
 
 test:e2e:
   stage: test
   needs: [build:app, build:docker]
 ```
 
-### Pipelines enfants (monorepo)
+### Child pipelines (monorepo)
 ```yaml
 trigger:backend:
   trigger:
     include: backend/.gitlab-ci.yml
-    strategy: depend   # le parent attend la fin du pipeline enfant
+    strategy: depend   # the parent waits for the child pipeline to finish
   rules:
     - changes:
         - backend/**/*
 ```
 
-### Templates partagés
+### Shared templates
 ```yaml
 include:
   - project: 'infra/ci-templates'
@@ -143,7 +143,7 @@ include:
   - template: 'Security/SAST.gitlab-ci.yml'
 ```
 
-## 6. Environnements et déploiements
+## 6. Environments and deployments
 
 ```yaml
 deploy:review:
@@ -167,9 +167,9 @@ stop:review:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 ```
 
-## 7. Sécurité intégrée
+## 7. Built-in security
 
-Activer les scanners natifs via les templates officiels :
+Enable the native scanners through the official templates:
 ```yaml
 include:
   - template: Security/SAST.gitlab-ci.yml
@@ -178,32 +178,32 @@ include:
   - template: Security/Secret-Detection.gitlab-ci.yml
 ```
 
-**Variables sensibles :**
+**Sensitive variables:**
 ```bash
-# Via CLI
+# Through the CLI
 glab variable set MY_SECRET "valeur" --masked --protected --project monprojet
 ```
-Dans l'UI : Settings > CI/CD > Variables → cocher `Masked` + `Protected`.
+In the UI: Settings > CI/CD > Variables → check `Masked` + `Protected`.
 
-## Garde-fous et anti-patterns
+## Guardrails and anti-patterns
 
-| Anti-pattern | Conséquence | Correction |
+| Anti-pattern | Consequence | Fix |
 |---|---|---|
-| Utiliser `only/except` | Comportement imprévisible sur MR | Migrer vers `rules:` |
-| Artifacts sans `expire_in` | Saturation stockage | Toujours fixer `expire_in` |
-| Secrets en clair dans le script | Fuite dans les logs | Variables masked + protected |
-| Un seul `.gitlab-ci.yml` de 500 lignes | Illisible, impossible à maintenir | `include:local:` par domaine |
-| Cache sans `key:files:` | Cache invalidé ou réutilisé à tort | Clé sur fichier de lock |
-| `when: always` sur les jobs de cleanup | Exécution même en cas d'échec upstream | `when: on_failure` ou `needs:` explicite |
-| Pas de `interruptible: true` sur les jobs de build | Files de runners saturées | Marquer les jobs annulables |
+| Using `only/except` | Unpredictable behavior on MRs | Migrate to `rules:` |
+| Artifacts without `expire_in` | Storage saturation | Always set `expire_in` |
+| Plain-text secrets in the script | Leak in the logs | Masked + protected variables |
+| A single 500-line `.gitlab-ci.yml` | Unreadable, impossible to maintain | `include:local:` per domain |
+| Cache without `key:files:` | Cache invalidated or wrongly reused | Key on the lock file |
+| `when: always` on cleanup jobs | Runs even when upstream fails | `when: on_failure` or explicit `needs:` |
+| No `interruptible: true` on build jobs | Saturated runner queues | Mark the jobs as cancellable |
 
-## Bonnes pratiques 2026
+## 2026 best practices
 
-- **Pipeline Component Catalog** (GitLab 16.9+) : publier des composants réutilisables dans le Catalog plutôt que des templates `include:remote`.
-- **CI/CD Catalog** : préférer `component:` à `include:project:` pour la versioning sémantique.
-- **`id_tokens:`** (OIDC) : remplacer les tokens statiques pour l'auth cloud (AWS, Azure, GCP) par des tokens OIDC courts-vivants.
-- **Merge Train** : activer sur les branches protégées à fort trafic pour éviter les régressions post-merge.
-- **`dast_configuration:`** : pointer sur un environnement de review pour le DAST plutôt qu'une URL codée en dur.
-- Valider le pipeline avant push : l'**éditeur de pipeline** GitLab (onglet *Validate*) simule la syntaxe et les règles. Pour une exécution locale réelle, l'outil tiers `gitlab-ci-local`.
+- **Pipeline Component Catalog** (GitLab 16.9+): publish reusable components in the Catalog rather than `include:remote` templates.
+- **CI/CD Catalog**: prefer `component:` over `include:project:` for semantic versioning.
+- **`id_tokens:`** (OIDC): replace static tokens for cloud auth (AWS, Azure, GCP) with short-lived OIDC tokens.
+- **Merge Train**: enable it on high-traffic protected branches to avoid post-merge regressions.
+- **`dast_configuration:`**: point to a review environment for DAST rather than a hard-coded URL.
+- Validate the pipeline before pushing: the GitLab **pipeline editor** (*Validate* tab) simulates the syntax and the rules. For a real local run, the third-party tool `gitlab-ci-local`.
 
-> `gitlab-runner exec` a été **retiré** en GitLab Runner 16.0. La commande n'existe plus ; elle reste citée dans beaucoup de documentations obsolètes.
+> `gitlab-runner exec` was **removed** in GitLab Runner 16.0. The command no longer exists; it is still quoted in a lot of outdated documentation.
