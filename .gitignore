@@ -14,7 +14,6 @@ backups/
 *.bak
 settings.local.json
 .last-*
-.caveman-active
 
-# Caches Python
+# Python caches
 __pycache__/
