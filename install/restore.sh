@@ -202,7 +202,7 @@ show_restore_summary() {
   ui_info "Your ~/.claude is back to how it was on $(backup_value "${SOURCE_DIR}" date "$(basename "${SOURCE_DIR}")")."
   if [[ -n ${BACKUP_DIR} ]]; then
     ui_explain "The config you had just before is saved in $(pretty_path "${BACKUP_DIR}")."
-    ui_explain "To undo this restore, run bash restore.sh again and pick choice 1."
+    ui_explain "To undo this restore, run ./restore.sh again and pick choice 1."
   fi
   printf '\n'
   ui_info "Restart Claude Code to load it."

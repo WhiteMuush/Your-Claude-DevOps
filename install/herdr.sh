@@ -14,7 +14,7 @@ check_herdr_dependencies() {
     ui_info "Debian / Ubuntu: sudo apt update && sudo apt install -y ${missing[*]}"
     ui_info "Fedora:          sudo dnf install -y ${missing[*]}"
     ui_info "Arch:            sudo pacman -S --needed ${missing[*]}"
-    ui_info "Then run again:  bash install.sh --herdr"
+    ui_info "Then run again:  ./install.sh --herdr"
   } >&2
   return 1
 }
