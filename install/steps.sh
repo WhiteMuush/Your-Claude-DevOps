@@ -65,7 +65,7 @@ step_skills() {
 step_hooks_and_memory() {
   CURRENT_STEP="step 4, hooks and memory"
   ui_title "Step 4/5: Hooks and memory"
-  ui_explain "Hooks are small scripts Claude Code runs automatically, like the skill reminder."
+  ui_explain "Hooks are small scripts Claude Code runs automatically at set moments, like the start of a session."
   ui_explain "They are copied to ~/.claude/hooks/."
   printf '\n'
   handle_group hooks "${REPO_DIR}/hooks" "${CLAUDE_DIR}/hooks"

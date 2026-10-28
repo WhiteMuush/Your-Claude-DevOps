@@ -38,6 +38,8 @@ The `autoMode` block of the source `settings.json` is excluded too: it pins loca
 
 ## Install on a new machine
 
+These manual steps overwrite your files without a backup. On a machine that already has a configuration, prefer `bash install.sh`, which asks first.
+
 1. Clone this repository, then copy the files into `~/.claude/`:
 
    ```bash
