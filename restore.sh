@@ -37,7 +37,7 @@ source "${REPO_DIR}/install/restore.sh"
 
 usage() {
   cat <<'EOF'
-Usage: bash restore.sh
+Usage: ./restore.sh
 
   Lists the backups in ~/.claude-backups, shows what will change,
   and asks before putting one back. Your current config is saved first.

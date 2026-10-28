@@ -38,7 +38,7 @@ source "${REPO_DIR}/install/steps.sh"
 
 usage() {
   cat <<'EOF'
-Usage: bash install.sh [--yes] [--herdr]
+Usage: ./install.sh [--yes] [--herdr]
 
   --yes    answer every question with its safe default: back up, install what
            is missing, keep your existing files, skip herdr
@@ -66,7 +66,7 @@ main() {
   trap on_exit EXIT
   trap 'exit 130' INT
 
-  check_terminal "bash install.sh --yes"
+  check_terminal "./install.sh --yes"
   check_dependencies
   show_welcome
   confirm_start

@@ -2,99 +2,139 @@
 
 ### Your Claude DevOps
 
-**A ready-to-use, shareable Claude Code configuration for Dev and Ops work.**
+**A ready-to-use Claude Code configuration for Dev and Ops work.**
 
 <br clear="all" />
 
-Global rules, 32 skills, hooks and memory scaffolding. Everything here is generic: no personal data, no secrets, no machine-specific paths. Install it on any machine, then customize it.
+Global rules, 32 skills, hooks and a memory scaffold, all generic: no personal data, no secrets, no machine-specific paths. Install it on any machine, then make it your own.
 
-> The **[wiki](https://github.com/WhiteMuush/Your-Claude-DevOps/wiki)** explains how this is built and why: which of the four channels each rule belongs to, how the skills trigger, and how the memory scaffold is meant to be used.
+> The **[wiki](https://github.com/WhiteMuush/Your-Claude-DevOps/wiki)** explains how it is built and why.
 
-## Quick install
+## Install
 
-- Interactive: `bash install.sh` explains each of its 5 steps, offers to back up your current config to `~/.claude-backups/`, and asks before replacing any file that differs (replace, keep, show the diff, or merge for `settings.json`). Existing memory notes are never replaced. It asks about the herdr workspace at the end, see below.
-- Without questions: `bash install.sh --yes` backs up, installs what is missing and keeps every file you already have. Add `--herdr` to install herdr too.
-- Undo: `bash restore.sh` lists your backups, shows exactly what will change, and puts `~/.claude` back as it was, removing what was added since (including the herdr line in `~/.zshrc`). It saves your current config first, so a restore can be undone too. Memory notes and the herdr program are never touched.
-- Tests: `bash tests/install_test.sh` and `bash tests/restore_test.sh` run both scripts in throwaway home folders, your real `~/.claude` is never touched.
-- Claude-guided: see `INSTALL.md` for a prompt to paste into Claude Code.
-- Manual: see "Install on a new machine" below.
+```bash
+git clone https://github.com/WhiteMuush/Your-Claude-DevOps.git
+cd Your-Claude-DevOps
+./install.sh
+```
 
-## Contents
+Then **restart Claude Code**.
 
-- `CLAUDE.md`: global rules covering adaptive teaching mode, visual clarity, response format, git conventions and token economy. Customize this file after install.
-- `skills/`: 32 skills, 17 for DevOps (Ansible, ArgoCD, Azure, Docker, Docker Swarm, GitHub Actions, GitLab CI, Helm, Prometheus and Grafana, Terraform, shell scripts, Makefiles, architecture diagrams with tool logos, an Obsidian documentation vault with a fixed graph, plus logging, metrics and tracing design) and 15 for development methodology (brainstorming, planning, TDD, debugging, code review, git worktrees, cleaning user-facing text).
-- `hooks/`: hook directory, shipped with its CommonJS manifest. Output shaping now comes from the `i-have-adhd` plugin, which registers its own hooks.
-- `settings.json`: Claude Code configuration (model, effort level, permissions with explicit deny rules, theme, `i-have-adhd` marketplace).
-- `install.sh`, `restore.sh` and `install/`: the interactive installer and its undo, one file per role (screens, checks, backup, file handling, settings merge, herdr, restore).
-- `tests/`: plain Bash tests for both scripts, run in throwaway home folders.
-- `memory/`: persistent memory scaffolding, empty by default (index plus one example file).
-- `shell/claude-herdr.zsh`: optional zsh wrapper that makes `claude` open a [herdr](https://herdr.dev) workspace, Claude on the left and a shell on the right.
+The installer **never replaces a file without asking**. It first offers to **back up** your current `~/.claude`, then goes through 5 steps:
 
-## What is deliberately not here
+1. **CLAUDE.md**: the rules Claude follows in every project.
+2. **settings.json**: permissions, model, theme and plugins. You can **merge** it with yours instead of replacing it.
+3. **Skills**: the guides Claude reads before a task.
+4. **Hooks and memory**: your existing memory notes are never replaced.
+5. **herdr** (optional): typing `claude` opens Claude on the left and a shell on the right.
 
-Secrets and private data are excluded and must never be committed: `.credentials.json`, `history.jsonl`, session transcripts, caches, and the real `memory/` files, which hold personal notes.
+When one of your files differs from the repository, you choose: **replace**, **keep**, or **show the diff** first.
 
-The `autoMode` block of the source `settings.json` is excluded too: it pins local filesystem paths, a private remote and the location of credential files.
+### Options
 
-## Install on a new machine
+| Command | What it does |
+|---|---|
+| `./install.sh` | Guided install, asks before every change |
+| `./install.sh --yes` | No questions: backs up, installs what is missing, keeps your existing files |
+| `./install.sh --yes --herdr` | Same, plus the herdr workspace |
+| `./install.sh --help` | Shows the options and exit codes |
 
-These manual steps overwrite your files without a backup. On a machine that already has a configuration, prefer `bash install.sh`, which asks first.
+### Undo an install
 
-1. Clone this repository, then copy the files into `~/.claude/`:
+```bash
+./restore.sh
+```
 
-   ```bash
-   cp CLAUDE.md ~/.claude/
-   cp -r skills/. ~/.claude/skills/
-   cp -r hooks/. ~/.claude/hooks/
-   cp settings.json ~/.claude/settings.json
-   ```
+It lists your backups, shows **exactly what will change**, and asks before doing anything. It then puts `~/.claude` back as it was, and removes what the install added.
 
-2. The `settings.json` shipped here holds no machine-specific path, so it copies as is. It does carry `deny` rules blocking `gh repo delete`, `gh repo edit` and force pushes; drop them if you want those commands back.
+Your current config is saved first, so **a restore can be undone too**. Your memory notes and the herdr program are never touched.
 
-3. Copy the memory scaffolding. The project key is derived from your home directory, so `/home/alice` becomes `-home-alice`:
+### Install with Claude's help
 
-   ```bash
-   MEMKEY="$(echo "$HOME" | tr '/' '-')"
-   mkdir -p "$HOME/.claude/projects/$MEMKEY/memory"
-   cp memory/*.md "$HOME/.claude/projects/$MEMKEY/memory/"
-   ```
+Open Claude Code in the cloned folder and paste the prompt from [`INSTALL.md`](INSTALL.md). Claude checks the result for you.
 
-4. The `i-have-adhd` plugin reinstalls itself: `settings.json` declares the `ayghri/i-have-adhd` marketplace and enables the plugin, which is fetched on the next Claude Code launch. To do it manually:
+## What is inside
 
-   ```
-   /plugin marketplace add ayghri/i-have-adhd
-   /plugin install i-have-adhd
-   ```
+| Path | Content |
+|---|---|
+| `CLAUDE.md` | Global rules: adaptive teaching mode, visual clarity, response format, git conventions, token economy |
+| `skills/` | 32 skills: 17 for DevOps, 15 for development methodology |
+| `settings.json` | Model, effort level, permissions with explicit `deny` rules, theme, `i-have-adhd` plugin |
+| `hooks/` | Hook directory, with its CommonJS manifest |
+| `memory/` | Memory scaffold: an index and one example file |
+| `shell/claude-herdr.zsh` | Optional zsh wrapper for the herdr workspace |
+| `install.sh`, `restore.sh`, `install/` | The installer, its undo, and their modules |
+| `tests/` | Plain Bash tests for both scripts |
 
-5. Restart Claude Code. The plugin registers its own hooks at session start.
+**The 17 DevOps skills** cover Ansible, ArgoCD, Azure, Docker, Docker Swarm, GitHub Actions, GitLab CI, Helm, Prometheus and Grafana, Terraform, shell scripts, Makefiles, architecture diagrams, an Obsidian documentation vault, and the design of logs, metrics and traces.
 
-## Optional: herdr workspace
+**The 15 methodology skills** cover brainstorming, planning, TDD, debugging, code review, git worktrees and cleaning user-facing text.
 
-With [herdr](https://herdr.dev) installed, typing `claude` opens a herdr workspace in the current directory, with Claude on the left and an empty shell on the right.
+## The herdr workspace
 
-Answer yes at the last step of `bash install.sh`, or pass `--herdr` to skip the question. This:
+[herdr](https://herdr.dev) splits your terminal: **Claude on the left, a shell on the right**, every time you type `claude`.
 
-1. Checks for `curl`, `jq` and `zsh`. If one is missing, it prints the `apt`, `dnf` and `pacman` command to install it and skips herdr, the rest of the install is kept.
-2. Installs herdr if it is not there yet: with Homebrew when available, otherwise with the [official installer](https://herdr.dev/docs/install/), which checks the SHA-256 and puts the binary in `~/.local/bin` (that directory must be in your `PATH`).
-3. Copies the wrapper to `~/.claude/shell/claude-herdr.zsh` and sources it from `~/.zshrc`, once. Moving or deleting the clone afterwards does not break your shell.
-4. Runs `herdr integration install claude`, which writes `~/.claude/hooks/herdr-agent-state.sh` and its `SessionStart` entry in `settings.json`.
+The installer asks about it at its last step. If you say yes, it:
 
-Step 4 only runs when you choose herdr. If you replace `settings.json` later, answer yes to herdr again to put its hook back, or pick merge, which keeps it.
+1. Checks for `curl`, `jq` and `zsh`, and tells you how to install any that is missing.
+2. Installs herdr, with Homebrew when available, otherwise with the [official installer](https://herdr.dev/docs/install/) into `~/.local/bin`.
+3. Copies the wrapper to `~/.claude/shell/` and adds one line to `~/.zshrc` to load it.
+4. Adds the herdr hook to `settings.json`.
 
-The wrapper falls back to the plain `claude` binary when herdr or `jq` is missing, when already inside herdr, when stdin or stdout is not a terminal, and for non-interactive flags and subcommands (`-p`, `--bg`, `--version`, `mcp`, `agents`, `logs`, `doctor`...). To bypass it once, run `command claude`.
+It only works with **zsh**. To skip the wrapper once, run `command claude`.
 
-## Notes
+The wrapper also steps aside on its own: when herdr or `jq` is missing, inside herdr itself, outside a terminal, and for non-interactive commands such as `-p`, `--version`, `mcp` or `doctor`.
 
-Everything in this repository is written in English, including the rules in `CLAUDE.md`, the DevOps skills and the memory templates.
+## Never included
 
-Em dashes were removed throughout, which is a personal formatting preference carried over from `CLAUDE.md`.
+These stay out of the repository and must never be committed:
+
+- `.credentials.json`, `history.jsonl`, session transcripts and caches
+- your real memory notes
+- the `autoMode` block of your own `settings.json`, which holds local paths and private remotes
+
+## Tests
+
+```bash
+bash tests/install_test.sh
+bash tests/restore_test.sh
+```
+
+They run both scripts in **throwaway home folders**, so your real `~/.claude` is never touched. No test framework is needed.
+
+<details>
+<summary><strong>Manual install, without the script</strong></summary>
+
+These commands **overwrite your files without a backup**. On a machine that already has a configuration, use `./install.sh` instead.
+
+```bash
+cp CLAUDE.md ~/.claude/
+cp -r skills/. ~/.claude/skills/
+cp -r hooks/. ~/.claude/hooks/
+cp settings.json ~/.claude/settings.json
+
+MEMKEY="$(echo "$HOME" | tr '/' '-')"
+mkdir -p "$HOME/.claude/projects/$MEMKEY/memory"
+cp memory/*.md "$HOME/.claude/projects/$MEMKEY/memory/"
+```
+
+The memory key comes from your home folder: `/home/alice` becomes `-home-alice`.
+
+The `i-have-adhd` plugin installs itself on the next Claude Code start. If it does not, run this in Claude Code:
+
+```
+/plugin marketplace add ayghri/i-have-adhd
+/plugin install i-have-adhd
+```
+
+</details>
 
 ## Credits
 
-This configuration assembles work from other people. None of it is sold or claimed as original, and all of it is worth visiting at the source.
+This configuration assembles other people's work. None of it is sold or claimed as original, and all of it is worth visiting at the source.
 
-- DevOps skills, adapted from [khalilbenaz/claude-skills-collection](https://github.com/khalilbenaz/claude-skills-collection), folder `devops-skills`.
-- Development and methodology skills, adapted from [obra/superpowers](https://github.com/obra/superpowers), folder `skills`. The upstream hooks are not included here.
-- Output shaping plugin, from [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd).
+- **DevOps skills**, adapted from [khalilbenaz/claude-skills-collection](https://github.com/khalilbenaz/claude-skills-collection), folder `devops-skills`.
+- **Methodology skills**, adapted from [obra/superpowers](https://github.com/obra/superpowers), folder `skills`. The upstream hooks are not included.
+- **Output shaping plugin**, from [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd).
 
-Adaptations are limited to formatting and language conventions. If you are one of the authors and want a credit changed or the content removed, open an issue and it will be handled.
+Adaptations are limited to formatting and language conventions. If you are one of the authors and want a credit changed or the content removed, open an issue.

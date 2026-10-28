@@ -70,7 +70,7 @@ test_replace_with_backup() {
   check "exits with 0" test "${STATUS}" -eq 0
   check "installs the repository version" cmp -s "${REPO_DIR}/CLAUDE.md" "${TEST_HOME}/.claude/CLAUDE.md"
   check "keeps the old version in the backup" test "$(cat "${backup}" 2>/dev/null)" == "my own rules"
-  check "prints how to restore the backup" grep -q 'bash restore.sh' <<<"${OUTPUT}"
+  check "prints how to restore the backup" grep -q './restore.sh' <<<"${OUTPUT}"
 }
 
 test_merge_settings() {

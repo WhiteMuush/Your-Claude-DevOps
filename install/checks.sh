@@ -30,7 +30,7 @@ check_dependencies() {
     ui_info "Fedora:          sudo dnf install -y jq diffutils"
     ui_info "Arch:            sudo pacman -S --needed jq diffutils"
     ui_info "macOS:           brew install jq"
-    ui_info "Then run again:  bash install.sh"
+    ui_info "Then run again:  ./install.sh"
   } >&2
   exit 1
 }
@@ -41,7 +41,7 @@ explain_state_after_stop() {
     ui_info "Nothing was changed." >&2
   elif [[ -n ${BACKUP_DIR} ]]; then
     ui_info "Your backup is in $(pretty_path "${BACKUP_DIR}")" >&2
-    ui_info "To put it back: bash restore.sh" >&2
+    ui_info "To put it back: ./restore.sh" >&2
   fi
 }
 
