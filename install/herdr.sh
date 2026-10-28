@@ -42,7 +42,7 @@ install_wrapper() {
     ui_ok "$(pretty_path "${ZSHRC}") already loads the wrapper"
   else
     {
-      printf '\n# claude opens a herdr workspace (Your-Claude-DevOps)\n'
+      printf '\n%s\n' "${ZSHRC_MARKER}"
       printf '[ -f "%s" ] && source "%s"\n' "${WRAPPER}" "${WRAPPER}"
     } >>"${ZSHRC}"
     ui_ok "Added one line to $(pretty_path "${ZSHRC}") to load the wrapper"

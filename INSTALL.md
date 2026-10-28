@@ -35,6 +35,7 @@ You can do everything yourself, without a prompt:
 bash install.sh              # guided install, asks before replacing anything
 bash install.sh --yes        # no questions, keeps your existing files
 bash install.sh --yes --herdr  # same, plus the herdr workspace
+bash restore.sh              # put back one of the backups made by the installer
 ```
 
 Then restart Claude Code.

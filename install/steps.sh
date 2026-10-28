@@ -131,7 +131,7 @@ show_summary() {
   if [[ -n ${BACKUP_DIR} ]]; then
     printf '\n'
     ui_info "Your backup is in $(pretty_path "${BACKUP_DIR}")"
-    ui_explain "To restore it: cp -a \"${BACKUP_DIR}/.\" ~/.claude/"
+    ui_explain "To put it back later, run: bash restore.sh"
   fi
 
   printf '\n'

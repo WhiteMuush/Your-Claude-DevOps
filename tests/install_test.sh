@@ -5,45 +5,8 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 readonly REPO_DIR
 
-PASSED=0
-FAILED=0
-TEST_HOME=""
-OUTPUT=""
-STATUS=0
-
-TEST_ROOT=$(mktemp -d)
-readonly TEST_ROOT
-trap 'rm -rf "${TEST_ROOT}"' EXIT
-
-new_home() {
-  TEST_HOME=$(mktemp -d "${TEST_ROOT}/home.XXXX")
-}
-
-# Runs the installer with the given answers on stdin, one per line, and keeps its output and status.
-run_install() {
-  local answers=$1
-  shift
-  STATUS=0
-  OUTPUT=$(printf '%b' "${answers}" | HOME="${TEST_HOME}" INSTALL_ASSUME_TTY=1 NO_COLOR=1 \
-    bash "${REPO_DIR}/install.sh" "$@" 2>&1) || STATUS=$?
-}
-
-tree_checksum() {
-  (cd "$1" && find . -type f -print0 | sort -z | xargs -0 cksum)
-}
-
-check() {
-  local description=$1
-  shift
-  if "$@"; then
-    PASSED=$((PASSED + 1))
-    printf '  ok      %s\n' "${description}"
-  else
-    FAILED=$((FAILED + 1))
-    printf '  FAILED  %s\n' "${description}"
-    printf '%s\n' "${OUTPUT}" | sed 's/^/          | /'
-  fi
-}
+# shellcheck source=tests/lib.sh
+source "${REPO_DIR}/tests/lib.sh"
 
 test_fresh_install() {
   printf '\nFresh install\n'
@@ -107,7 +70,7 @@ test_replace_with_backup() {
   check "exits with 0" test "${STATUS}" -eq 0
   check "installs the repository version" cmp -s "${REPO_DIR}/CLAUDE.md" "${TEST_HOME}/.claude/CLAUDE.md"
   check "keeps the old version in the backup" test "$(cat "${backup}" 2>/dev/null)" == "my own rules"
-  check "prints how to restore the backup" grep -q 'To restore it' <<<"${OUTPUT}"
+  check "prints how to restore the backup" grep -q 'bash restore.sh' <<<"${OUTPUT}"
 }
 
 test_merge_settings() {
@@ -228,8 +191,7 @@ main() {
   test_yes_mode
   test_bad_option
   test_colors
-  printf '\n%s passed, %s failed\n' "${PASSED}" "${FAILED}"
-  (( FAILED == 0 ))
+  finish
 }
 
 main "$@"

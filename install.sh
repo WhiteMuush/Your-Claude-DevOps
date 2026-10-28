@@ -16,6 +16,7 @@ NOTHING_WRITTEN=1
 BACKUP_DIR=""
 UI_ANSWER=""
 SUMMARY=()
+EXISTING_ITEMS=()
 TMP_PATHS=()
 RESTORE_FROM=""
 RESTORE_TO=""
@@ -59,24 +60,13 @@ parse_args() {
   done
 }
 
-on_exit() {
-  local status=$?
-  cleanup_temp_paths
-  case ${status} in
-    0|2|3) ;;
-    130) ui_warn "Stopped with Ctrl+C during: ${CURRENT_STEP}."; explain_state_after_stop ;;
-    *) ui_error "The installer stopped during: ${CURRENT_STEP}."; explain_state_after_stop ;;
-  esac
-  exit "${status}"
-}
-
 main() {
   parse_args "$@"
   ui_init
   trap on_exit EXIT
   trap 'exit 130' INT
 
-  check_terminal
+  check_terminal "bash install.sh --yes"
   check_dependencies
   show_welcome
   confirm_start

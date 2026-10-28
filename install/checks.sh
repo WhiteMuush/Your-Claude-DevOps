@@ -2,12 +2,17 @@
 # Requirement checks that run before the installer writes anything.
 
 check_terminal() {
+  local fallback=${1:-}
   CURRENT_STEP="checking the terminal"
   (( ASSUME_YES )) && return 0
-  # INSTALL_ASSUME_TTY is reserved for tests/install_test.sh, which pipes its answers in.
+  # INSTALL_ASSUME_TTY is reserved for the tests in tests/, which pipe their answers in.
   [[ -t 0 || ${INSTALL_ASSUME_TTY:-0} == 1 ]] && return 0
-  ui_error "This installer asks questions, so it needs a terminal."
-  ui_info "Run it in a terminal, or use: bash install.sh --yes" >&2
+  ui_error "This script asks questions, so it needs a terminal."
+  if [[ -n ${fallback} ]]; then
+    ui_info "Run it in a terminal, or use: ${fallback}" >&2
+  else
+    ui_info "Run it in a terminal." >&2
+  fi
   exit 1
 }
 
@@ -36,6 +41,17 @@ explain_state_after_stop() {
     ui_info "Nothing was changed." >&2
   elif [[ -n ${BACKUP_DIR} ]]; then
     ui_info "Your backup is in $(pretty_path "${BACKUP_DIR}")" >&2
-    ui_info "To restore it: cp -a \"${BACKUP_DIR}/.\" ~/.claude/" >&2
+    ui_info "To put it back: bash restore.sh" >&2
   fi
+}
+
+on_exit() {
+  local status=$?
+  cleanup_temp_paths
+  case ${status} in
+    0|2|3) ;;
+    130) ui_warn "Stopped with Ctrl+C during: ${CURRENT_STEP}."; explain_state_after_stop ;;
+    *) ui_error "Stopped during: ${CURRENT_STEP}."; explain_state_after_stop ;;
+  esac
+  exit "${status}"
 }

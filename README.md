@@ -14,7 +14,8 @@ Global rules, 32 skills, hooks and memory scaffolding. Everything here is generi
 
 - Interactive: `bash install.sh` explains each of its 5 steps, offers to back up your current config to `~/.claude-backups/`, and asks before replacing any file that differs (replace, keep, show the diff, or merge for `settings.json`). Existing memory notes are never replaced. It asks about the herdr workspace at the end, see below.
 - Without questions: `bash install.sh --yes` backs up, installs what is missing and keeps every file you already have. Add `--herdr` to install herdr too.
-- Tests: `bash tests/install_test.sh` runs the installer in throwaway home folders, your real `~/.claude` is never touched.
+- Undo: `bash restore.sh` lists your backups, shows exactly what will change, and puts `~/.claude` back as it was, removing what was added since (including the herdr line in `~/.zshrc`). It saves your current config first, so a restore can be undone too. Memory notes and the herdr program are never touched.
+- Tests: `bash tests/install_test.sh` and `bash tests/restore_test.sh` run both scripts in throwaway home folders, your real `~/.claude` is never touched.
 - Claude-guided: see `INSTALL.md` for a prompt to paste into Claude Code.
 - Manual: see "Install on a new machine" below.
 
@@ -24,8 +25,8 @@ Global rules, 32 skills, hooks and memory scaffolding. Everything here is generi
 - `skills/`: 32 skills, 17 for DevOps (Ansible, ArgoCD, Azure, Docker, Docker Swarm, GitHub Actions, GitLab CI, Helm, Prometheus and Grafana, Terraform, shell scripts, Makefiles, architecture diagrams with tool logos, an Obsidian documentation vault with a fixed graph, plus logging, metrics and tracing design) and 15 for development methodology (brainstorming, planning, TDD, debugging, code review, git worktrees, cleaning user-facing text).
 - `hooks/`: hook directory, shipped with its CommonJS manifest. Output shaping now comes from the `i-have-adhd` plugin, which registers its own hooks.
 - `settings.json`: Claude Code configuration (model, effort level, permissions with explicit deny rules, theme, `i-have-adhd` marketplace).
-- `install.sh` and `install/`: the interactive installer, one file per role (screens, checks, backup, file handling, settings merge, herdr).
-- `tests/install_test.sh`: plain Bash tests for the installer, run in throwaway home folders.
+- `install.sh`, `restore.sh` and `install/`: the interactive installer and its undo, one file per role (screens, checks, backup, file handling, settings merge, herdr, restore).
+- `tests/`: plain Bash tests for both scripts, run in throwaway home folders.
 - `memory/`: persistent memory scaffolding, empty by default (index plus one example file).
 - `shell/claude-herdr.zsh`: optional zsh wrapper that makes `claude` open a [herdr](https://herdr.dev) workspace, Claude on the left and a shell on the right.
 
