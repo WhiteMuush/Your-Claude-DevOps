@@ -49,10 +49,7 @@
 - Bash grep > Read to search for symbols/patterns
 - Bash find from `.`, never from `/`
 
-## Sub-agents (cavecrew)
-- Code search: cavecrew-investigator (output ~60% smaller)
-- Editing 1-2 files: cavecrew-builder
-- Diff review: cavecrew-reviewer
+## Sub-agents
 - run_in_background for independent parallel tasks
 
 ## Responses
