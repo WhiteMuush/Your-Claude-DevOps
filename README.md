@@ -59,7 +59,7 @@ Open Claude Code in the cloned folder and paste the prompt from [`INSTALL.md`](I
 |---|---|
 | `CLAUDE.md` | Global rules: adaptive teaching mode, visual clarity, response format, git conventions, token economy |
 | `skills/` | 32 skills: 17 for DevOps, 15 for development methodology |
-| `settings.json` | Model, effort level, permissions with explicit `deny` rules, theme, `i-have-adhd` plugin |
+| `settings.json` | Model, effort level, permissions with explicit `deny` rules, theme |
 | `hooks/` | Hook directory, with its CommonJS manifest |
 | `memory/` | Memory scaffold: an index and one example file |
 | `shell/claude-herdr.zsh` | Optional zsh wrapper for the herdr workspace |
@@ -120,13 +120,6 @@ cp memory/*.md "$HOME/.claude/projects/$MEMKEY/memory/"
 
 The memory key comes from your home folder: `/home/alice` becomes `-home-alice`.
 
-The `i-have-adhd` plugin installs itself on the next Claude Code start. If it does not, run this in Claude Code:
-
-```
-/plugin marketplace add ayghri/i-have-adhd
-/plugin install i-have-adhd
-```
-
 </details>
 
 ## Credits
@@ -135,6 +128,5 @@ This configuration assembles other people's work. None of it is sold or claimed 
 
 - **DevOps skills**, adapted from [khalilbenaz/claude-skills-collection](https://github.com/khalilbenaz/claude-skills-collection), folder `devops-skills`.
 - **Methodology skills**, adapted from [obra/superpowers](https://github.com/obra/superpowers), folder `skills`. The upstream hooks are not included.
-- **Output shaping plugin**, from [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd).
 
 Adaptations are limited to formatting and language conventions. If you are one of the authors and want a credit changed or the content removed, open an issue.

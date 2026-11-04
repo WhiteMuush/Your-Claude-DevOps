@@ -1,8 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(gh:*)",
-      "Bash(git push:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr status:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh repo view:*)",
       "Bash(git fetch:*)",
       "Bash(git clone:*)",
       "Edit(.github/**)",
@@ -11,29 +19,20 @@
     "deny": [
       "Bash(gh repo delete:*)",
       "Bash(gh repo edit:*)",
+      "Bash(gh gist:*)",
+      "Bash(gh secret:*)",
+      "Bash(gh auth token:*)",
       "Bash(git push --force:*)",
       "Bash(git push -f:*)"
     ],
     "defaultMode": "auto"
   },
   "model": "opus",
-  "enabledPlugins": {
-    "i-have-adhd@i-have-adhd": true
-  },
-  "extraKnownMarketplaces": {
-    "i-have-adhd": {
-      "source": {
-        "source": "github",
-        "repo": "ayghri/i-have-adhd"
-      }
-    }
-  },
   "effortLevel": "high",
   "modelSettings": {
     "claude-opus-5": {
       "effortLevel": "medium"
     }
   },
-  "theme": "light",
-  "skipAutoPermissionPrompt": true
+  "theme": "light"
 }

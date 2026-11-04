@@ -136,9 +136,6 @@ show_summary() {
 
   printf '\n'
   ui_info "Restart Claude Code to load the new configuration."
-  ui_explain "The i-have-adhd plugin installs itself on the next start. If it does not, run in Claude Code:"
-  ui_explain "  /plugin marketplace add ayghri/i-have-adhd"
-  ui_explain "  /plugin install i-have-adhd"
   if [[ $(summary_names installed) == *herdr* ]]; then
     ui_explain "Open a new terminal: typing claude now starts herdr."
   fi
