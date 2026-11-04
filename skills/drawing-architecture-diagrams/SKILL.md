@@ -38,12 +38,15 @@ A single diagram that tells the system's story from left to right, with the **of
 
 ## Logo sources
 
+Every logo is read from this skill's `icons/` folder, so rendering makes no network call.
+
 | Source | For | Pitfall |
 |---|---|---|
-| `simple:<slug>` | Brands (gitlab, kubernetes, grafana, argo, traefikproxy, victoriametrics, terraform) | No Microsoft or Azure logos. Test the slug: `curl -I https://cdn.simpleicons.org/<slug>` must return 200 |
-| `azure:<Nom>` | Official Azure services (Kubernetes-Services, Storage-Accounts, Monitor, Managed-Identities) | Exact file name, without the numeric prefix |
-| `url:<svg>` | Official logo in the project's repository (cert-manager, Velero) | Check that it is a logo and not a banner or a logo with text |
-| `crop="x y w h"` | Keep only the icon of a logo with text | Velero: `url:.../site/static/img/Velero.svg` with `crop="8 8 184 184"` |
+| `simple:<slug>` | Brands (gitlab, kubernetes, grafana, argo, traefikproxy, victoriametrics, terraform), from `icons/simple/` | No Microsoft or Azure logos. Test the slug: `ls icons/simple/<slug>.svg` |
+| `azure:<Nom>` | Official Azure services (Kubernetes-Services, Storage-Accounts, Monitor, Managed-Identities), from `icons/azure/` | Exact file name, without the numeric prefix. The folder is empty until Microsoft's icon zip is unzipped there |
+| `file:<path.svg>` | Any other logo saved once in `icons/custom/` (cert-manager, Velero) | Check that it is a logo and not a banner or a logo with text |
+| `url:<svg>` | Last resort, the only source that uses the network | Prefer saving the SVG in `icons/custom/` and using `file:` |
+| `crop="x y w h"` | Keep only the icon of a logo with text | Velero: `file:icons/custom/velero.svg` with `crop="8 8 184 184"` |
 
 skillicons.dev returns an **empty 256-byte** icon for an unknown name (argocd, helm), with no error: do not rely on it.
 

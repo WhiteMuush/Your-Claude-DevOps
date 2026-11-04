@@ -10,11 +10,11 @@ Usage from a spec file:
     d.arrow([(127, 360), (286, 360)], "CI jobs")
     d.save("docs/architecture.svg")   # also writes architecture.png for review
 
-Logo sources:
-    simple:<slug>           Simple Icons in brand color (https://simpleicons.org)
-    azure:<name>            official Azure architecture icon, e.g. azure:Kubernetes-Services
-    url:<https://...svg>    any SVG on the web
-    file:<path.svg>         a local SVG
+Logo sources (all read from this skill's icons/ folder, no network call):
+    simple:<slug>           Simple Icons in brand color, icons/simple/<slug>.svg
+    azure:<name>            official Azure architecture icon, e.g. azure:Kubernetes-Services, from icons/azure/
+    file:<path.svg>         a local SVG, e.g. one saved in icons/custom/
+    url:<https://...svg>    any SVG on the web, the only source that uses the network
 """
 
 import base64
@@ -23,10 +23,9 @@ import hashlib
 import os
 import re
 import urllib.request
-import zipfile
 
 CACHE = os.path.expanduser("~/.cache/drawing-architecture-diagrams")
-AZURE_ZIP = "https://arch-center.azureedge.net/icons/Azure_Public_Service_Icons_V21.zip"
+ICONS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons")
 
 STYLE = """
 .t{font-size:13px;fill:#222;text-anchor:middle}
@@ -51,13 +50,17 @@ def _fetch(url):
     return open(path, encoding="utf-8").read()
 
 
+def _simple(slug):
+    path = os.path.join(ICONS, "simple", f"{slug}.svg")
+    if not os.path.isfile(path):
+        raise SystemExit(f"no Simple Icon named {slug}, try: ls {os.path.dirname(path)} | grep -i {slug}")
+    return open(path, encoding="utf-8").read()
+
+
 def _azure(name):
-    root = os.path.join(CACHE, "azure")
+    root = os.path.join(ICONS, "azure")
     if not os.path.isdir(root):
-        os.makedirs(CACHE, exist_ok=True)
-        zpath = os.path.join(CACHE, "azure.zip")
-        urllib.request.urlretrieve(AZURE_ZIP, zpath)
-        zipfile.ZipFile(zpath).extractall(root)
+        raise SystemExit(f"no Azure icons in {root}: unzip Microsoft's Azure architecture icons there")
     hits = sorted(glob.glob(os.path.join(root, "**", f"*-icon-service-{name}.svg"), recursive=True))
     if not hits:
         raise SystemExit(f"no Azure icon named {name}, try: ls {root}/**/Icons/*/ | grep -i {name}")
@@ -68,13 +71,14 @@ def load_logo(source, crop=None):
     """Returns the logo as a data URI, with a viewBox so it scales."""
     kind, _, ref = source.partition(":")
     if kind == "simple":
-        svg = _fetch(f"https://cdn.simpleicons.org/{ref}")
+        svg = _simple(ref)
     elif kind == "azure":
         svg = _azure(ref)
     elif kind == "url":
         svg = _fetch(ref)
     elif kind == "file":
-        svg = open(ref, encoding="utf-8").read()
+        path = ref if os.path.isabs(ref) or os.path.exists(ref) else os.path.join(os.path.dirname(ICONS), ref)
+        svg = open(path, encoding="utf-8").read()
     else:
         raise SystemExit(f"unknown logo source: {source}")
     head = svg[: svg.index(">", svg.index("<svg")) + 1]
@@ -157,6 +161,7 @@ class Diagram:
             f.write(self.svg())
         if png:
             import cairosvg
+            os.makedirs(CACHE, exist_ok=True)
             out = os.path.join(CACHE, os.path.basename(path).rsplit(".", 1)[0] + ".png")
             cairosvg.svg2png(url=path, write_to=out)
             print("review:", out)

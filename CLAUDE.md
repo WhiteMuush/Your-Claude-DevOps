@@ -33,9 +33,10 @@
 
 # SKILLS
 
-32 skills in `~/.claude/skills/` (exact names injected by the system at startup):
+33 skills in `~/.claude/skills/` (exact names injected by the system at startup):
 - 17 DevOps: infra, CI-CD, cloud, orchestration, monitoring. For this kind of work, check the relevant skill BEFORE suggesting commands or configs, even without an exact keyword
 - 15 dev/methodology (superpowers): brainstorm, plan, TDD, debug, code review, git worktrees. As soon as the task is to DEVELOP (feature, fix, refactor, tests): follow the workflow, brainstorm/plan then TDD RED-GREEN-REFACTOR then code review before merge. Do not rush straight into the code
+- 1 output style: `i-have-adhd`, invoked with `/i-have-adhd`, always on when `~/.claude/.i-have-adhd-always` exists
 
 # TOKEN OPTIMIZATION
 
