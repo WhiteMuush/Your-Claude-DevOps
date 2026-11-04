@@ -20,7 +20,7 @@ On the new machine:
 > Steps:
 > 1. Read the `README.md` and the `install.sh` script to understand what needs to be copied into `~/.claude/`.
 > 2. The script writes to `~/.claude/` and asks questions, so do not run it yourself. Tell me to run `./install.sh` in a separate terminal, in this folder. If I prefer to stay here, give me `! ./install.sh --yes`, which asks nothing, makes a backup and keeps every file I already have.
-> 3. Once I have run it, check that the install is correct: `~/.claude/CLAUDE.md` is present, `~/.claude/skills` contains 32 folders, and the memory is in `~/.claude/projects/<key>/memory`.
+> 3. Once I have run it, check that the install is correct: `~/.claude/CLAUDE.md` is present, `~/.claude/skills` contains 33 folders, and the memory is in `~/.claude/projects/<key>/memory`.
 > 4. If I chose herdr (the installer asks at its last step, or `--herdr` with `--yes`), check that `~/.claude/shell/claude-herdr.zsh` exists and that `~/.zshrc` sources it only once.
 > 5. Confirm when everything is in place and tell me to restart Claude Code.
 

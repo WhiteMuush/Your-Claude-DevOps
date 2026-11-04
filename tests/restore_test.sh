@@ -34,7 +34,7 @@ test_restore_after_install() {
   check "removes settings.json, which did not exist" test ! -e "${TEST_HOME}/.claude/settings.json"
   check "removes hooks, which did not exist" test ! -e "${TEST_HOME}/.claude/hooks"
   check "saves the current config first" test "$(count_backups)" -eq 2
-  check "lists the removed skills before asking" grep -q 'removes 32 added since that date' <<<"${OUTPUT}"
+  check "lists the removed skills before asking" grep -q 'removes 33 added since that date' <<<"${OUTPUT}"
 
   run_restore '2\n'
   check "says nothing to do when the config already matches" grep -q 'Nothing to do' <<<"${OUTPUT}"

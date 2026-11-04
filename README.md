@@ -6,7 +6,7 @@
 
 <br clear="all" />
 
-Global rules, 32 skills, hooks and a memory scaffold, all generic: no personal data, no secrets, no machine-specific paths. Install it on any machine, then make it your own.
+Global rules, 33 skills, hooks and a memory scaffold, all generic: no personal data, no secrets, no machine-specific paths. Install it on any machine, then make it your own.
 
 > The **[wiki](https://github.com/WhiteMuush/Your-Claude-DevOps/wiki)** explains how it is built and why.
 
@@ -58,9 +58,9 @@ Open Claude Code in the cloned folder and paste the prompt from [`INSTALL.md`](I
 | Path | Content |
 |---|---|
 | `CLAUDE.md` | Global rules: adaptive teaching mode, visual clarity, response format, git conventions, token economy |
-| `skills/` | 32 skills: 17 for DevOps, 15 for development methodology |
-| `settings.json` | Model, effort level, permissions with explicit `deny` rules, theme |
-| `hooks/` | Hook directory, with its CommonJS manifest |
+| `skills/` | 33 skills: 17 for DevOps, 15 for development methodology, 1 output style (`i-have-adhd`) |
+| `settings.json` | Model, effort level, permissions with explicit `deny` rules, theme, `i-have-adhd` always-on hook |
+| `hooks/` | Hook directory, with its CommonJS manifest and the `i-have-adhd` always-on hook |
 | `memory/` | Memory scaffold: an index and one example file |
 | `shell/claude-herdr.zsh` | Optional zsh wrapper for the herdr workspace |
 | `install.sh`, `restore.sh`, `install/` | The installer, its undo, and their modules |
@@ -128,5 +128,6 @@ This configuration assembles other people's work. None of it is sold or claimed 
 
 - **DevOps skills**, adapted from [khalilbenaz/claude-skills-collection](https://github.com/khalilbenaz/claude-skills-collection), folder `devops-skills`.
 - **Methodology skills**, adapted from [obra/superpowers](https://github.com/obra/superpowers), folder `skills`. The upstream hooks are not included.
+- **Output shaping plugin**, from [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd), bundled locally as a skill and a hook.
 
 Adaptations are limited to formatting and language conventions. If you are one of the authors and want a credit changed or the content removed, open an issue.

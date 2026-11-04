@@ -34,5 +34,19 @@
       "effortLevel": "medium"
     }
   },
-  "theme": "light"
+  "theme": "light",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/.claude/hooks/i-have-adhd-always-on.mjs\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
 }
